@@ -1,4 +1,5 @@
 /** The stub agent: ends the handed-off delivery with the echo reply, through the delivery API. */
+import { DeliveryActivity } from '@humanlayer/channels-delivery'
 import { Effect, Predicate, Schedule } from 'effect'
 
 import { type AgentSessionMessage, targetOf } from './AgentSessionMessage'
@@ -7,6 +8,7 @@ import { echoReply } from './EchoReply'
 
 const RETRY_EVERY = '10 seconds'
 const RETRY_TIMES = 30
+const WORKING = DeliveryActivity.cases.Working.make({ message: 'Working on it' })
 
 /**
  * Whether completing may succeed later. The delivery is not found until the callback's `handoff()` has been
@@ -20,6 +22,11 @@ const isRetryable = (error: unknown) =>
 /** Complete the delivery with the echo reply. A delivery that already ended counts as done; other failures are logged. */
 export const answer = Effect.fn('echo_agent.answer')(function* (message: AgentSessionMessage) {
 	const api = yield* DeliveryApi
+	/** Only cosmetic, but GitHub removes the `eyes` reaction at the end only if the last activity was `Working`. */
+	yield* api.activity.set({ ...targetOf(message), activity: WORKING }).pipe(
+		Effect.tapError((error) => Effect.logWarning('echo_agent.answer: set_activity failed', error)),
+		Effect.ignore,
+	)
 	yield* api.complete({ ...targetOf(message), payload: { markdown: echoReply(message.prompt) } }).pipe(
 		Effect.retry({ schedule: Schedule.spaced(RETRY_EVERY), times: RETRY_TIMES, while: isRetryable }),
 		Effect.catchTags({

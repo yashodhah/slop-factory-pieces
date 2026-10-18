@@ -36,16 +36,23 @@ type CompleteCall = DeliveryClientTarget & { readonly payload?: { readonly markd
 const fakeDeliveryApi = (failures: ReadonlyArray<DeliveryNotFound | DeliveryClosed>) =>
 	Effect.gen(function* () {
 		const calls = yield* Ref.make<ReadonlyArray<CompleteCall>>([])
+		const order = yield* Ref.make<ReadonlyArray<string>>([])
+		const activity = yield* Ref.make<ReadonlyArray<unknown>>([])
+		const set = (call: { readonly activity: unknown }) =>
+			Ref.update(order, (all) => [...all, 'activity']).pipe(
+				Effect.andThen(Ref.update(activity, (all) => [...all, call.activity])),
+			)
 		const complete = (call: CompleteCall) =>
 			Effect.gen(function* () {
+				yield* Ref.update(order, (all) => [...all, 'complete'])
 				const before = yield* Ref.getAndUpdate(calls, (all) => [...all, call])
 				const failure = failures[before.length]
 				if (failure !== undefined) return yield* Effect.fail(failure)
 				return { _tag: 'DeliveryMutationReceipt', deliveryId: message.deliveryId, status: 'accepted' } as const
 			})
 		// The test double implements the one method `answer` calls, so it is widened to the client type here.
-		const layer = Layer.succeed(DeliveryApi, { complete } as unknown as DeliveryClient)
-		return { calls, layer }
+		const layer = Layer.succeed(DeliveryApi, { complete, activity: { set } } as unknown as DeliveryClient)
+		return { calls, order, activity, layer }
 	})
 
 describe('answer', () => {
@@ -59,6 +66,15 @@ describe('answer', () => {
 			expect(Redacted.value(all[0]!.accessToken)).toBe('secret-token')
 			expect(all[0]?.payload?.markdown).toContain('Got it')
 			expect(all[0]?.payload?.markdown).toContain('"why does CI fail?"')
+		}),
+	)
+
+	it.effect('shows Working before it completes, so GitHub clears the eyes reaction', () =>
+		Effect.gen(function* () {
+			const { order, activity, layer } = yield* fakeDeliveryApi([])
+			yield* answer(message).pipe(Effect.provide(layer))
+			expect(yield* Ref.get(order)).toEqual(['activity', 'complete'])
+			expect(yield* Ref.get(activity)).toMatchObject([{ _tag: 'Working' }])
 		}),
 	)
 

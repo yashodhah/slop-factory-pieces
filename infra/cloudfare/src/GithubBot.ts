@@ -114,6 +114,8 @@ const githubRepositoryLogAnnotations = (ref: GitHubRepositoryRef) => ({
 	'github.installation_id': ref.installationId,
 })
 
+const HANDOFF_FAIL_AFTER = '10 minutes'
+
 type HandlerError = GitHubApiError | Config.ConfigError | MailboxSubscriptionError | DeliveryHandoffError
 type HandlerRequirements = GitHubApi | RuntimeContext | AgentSessions | MailboxSubscriptions
 
@@ -140,7 +142,8 @@ export const githubHandlers = {
 			).pipe(Effect.orDie)
 			const agentSessions = yield* AgentSessions
 			yield* agentSessions.getByName(discussion.mailboxKey).send(message)
-			return yield* context.handoff()
+			/** Fail a lost agent's delivery soon, so it cannot hold back the discussion's mailbox for the default day. */
+			return yield* context.handoff({ failAfter: HANDOFF_FAIL_AFTER })
 		}).pipe(
 			Effect.annotateLogs({
 				...githubRepositoryLogAnnotations(discussion.ref),

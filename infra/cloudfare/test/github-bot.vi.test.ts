@@ -148,7 +148,7 @@ const runOnMentioned = (
 		for (const fixture of fixtures) {
 			yield* githubHandlers.onMentioned(fixture.event, delivery.context).pipe(Effect.provide(layer))
 		}
-		return { recorded: yield* Ref.get(recorded), handoffs: yield* delivery.handoffCalls, delivery: delivery.context }
+		return { recorded: yield* Ref.get(recorded), handoffs: yield* delivery.handoffCalls, handoffOptions: yield* delivery.handoffOptions, delivery: delivery.context }
 	})
 
 describe('onMentioned with write access', () => {
@@ -170,6 +170,14 @@ describe('onMentioned with write access', () => {
 			}),
 		)
 	}
+
+	it.effect('hands off with a 10 minute failAfter so a lost agent cannot block the discussion for a day', ({ expect }) =>
+		Effect.gen(function* () {
+			const [fixture] = mentions('@agent help')
+			const result = yield* runOnMentioned([fixture!], 'write')
+			expect(result.handoffOptions).toEqual([{ failAfter: '10 minutes' }])
+		}),
+	)
 
 	it.effect('passes a bare "@agent" mention through as written', ({ expect }) =>
 		Effect.gen(function* () {
