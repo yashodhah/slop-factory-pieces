@@ -10,6 +10,7 @@
 		"alchemy:deploy": "alchemy deploy"
 	},
 	"dependencies": {
+		"@effect/platform-bun": "4.0.5",
 		"@effect/platform-node": "4.0.5",
 		"@humanlayer/channels-alchemy-cloudflare": "0.1.0",
 		"@humanlayer/channels-delivery": "0.1.0",
