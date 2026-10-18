@@ -53,6 +53,16 @@ The sandbox and tooling part of the learning goal is something we add on top of 
 6. **Stop signal.** Confirm in code how a stop is delivered (see [05-state-and-memory](05-state-and-memory.md)).
 7. **Agent state store.** Where does the agent keep its per-PR conversation and files so a second turn finds them?
 
+## Decisions
+
+| # | Decision | Date | Notes |
+|---|---|---|---|
+| D1 | Keep Alchemy for deploying the broker, for now | 2026-10-18 | Alchemy is only needed by the SDK's Cloudflare adapter (`@humanlayer/channels-alchemy-cloudflare`). Terraform or Postgres/Redis storage remain possible later. The example pins `alchemy` at `2.0.0-beta.83`, a beta |
+
+Facts checked: `@humanlayer/channels-delivery`, `-github` and `-alchemy-cloudflare` are published on npm at `0.1.0` (dist-tag `latest`), so the starter can install them without linking the local checkout. The example's other pins: `effect` 4.0.0, `@cloudflare/workers-types` 5.20260929.1.
+
+**Effect version pinning (found in the first live run, 2026-10-18):** `@humanlayer/channels-delivery` 0.1.0 reads `Crypto.randomUUIDv4` as a value, which only works on effect 4.0.0 to 4.0.2. The first install pinned `effect` 4.0.0 but a transitive package (`@effect/platform-node-shared`) floated to 4.0.5, which looked like "Alchemy needs 4.0.5". That diagnosis was wrong. The fix is the SDK repo's own `overrides` block: pin `effect` and every `@effect/*` package to 4.0.0 in `infra/cloudfare/package.json`. Alchemy beta.83 and the SDK both work on that set. `test/sdk-mailbox-crypto.vi.test.ts` runs the real SDK mailbox function on the installed effect so this drift fails locally. The failure mode when it drifts: the mailbox crashes at `MailboxProcessing.js:575` whenever output is due, so the 👀 appears but no reply is posted. The SDK example in `~/Projects/effect-channels` targets unreleased monorepo main, not the published 0.1.0.
+
 ## Size
 
 Project with a written design, then a plan. Not yet at the written-design stage.

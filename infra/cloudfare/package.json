@@ -1,0 +1,40 @@
+{
+	"name": "slop-code-factory-broker",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"test": "vitest --run",
+		"typecheck": "tsc --noEmit -p tsconfig.json",
+		"dev": "alchemy dev",
+		"alchemy:plan": "alchemy plan",
+		"alchemy:deploy": "alchemy deploy"
+	},
+	"dependencies": {
+		"@effect/platform-bun": "4.0.0",
+		"@effect/platform-node": "4.0.0",
+		"@humanlayer/channels-alchemy-cloudflare": "0.1.0",
+		"@humanlayer/channels-delivery": "0.1.0",
+		"@humanlayer/channels-github": "0.1.0",
+		"alchemy": "2.0.0-beta.83",
+		"effect": "4.0.0"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "5.20260929.1",
+		"@effect/vitest": "4.0.0",
+		"@types/bun": "^1.3.10",
+		"typescript": "7.0.2",
+		"vitest": "5.0.1"
+	},
+	"overrides": {
+		"@effect/opentelemetry": "4.0.0",
+		"@effect/platform-browser": "4.0.0",
+		"@effect/platform-bun": "4.0.0",
+		"@effect/platform-node": "4.0.0",
+		"@effect/platform-node-shared": "4.0.0",
+		"@effect/sql-d1": "4.0.0",
+		"@effect/sql-pg": "4.0.0",
+		"@effect/sql-sqlite-do": "4.0.0",
+		"@effect/vitest": "4.0.0",
+		"effect": "4.0.0"
+	}
+}
