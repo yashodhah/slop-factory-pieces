@@ -53,6 +53,14 @@ The sandbox and tooling part of the learning goal is something we add on top of 
 6. **Stop signal.** Confirm in code how a stop is delivered (see [05-state-and-memory](05-state-and-memory.md)).
 7. **Agent state store.** Where does the agent keep its per-PR conversation and files so a second turn finds them?
 
+## Decisions
+
+| # | Decision | Date | Notes |
+|---|---|---|---|
+| D1 | Keep Alchemy for deploying the broker, for now | 2026-10-18 | Alchemy is only needed by the SDK's Cloudflare adapter (`@humanlayer/channels-alchemy-cloudflare`). Terraform or Postgres/Redis storage remain possible later. The example pins `alchemy` at `2.0.0-beta.83`, a beta |
+
+Facts checked: `@humanlayer/channels-delivery`, `-github` and `-alchemy-cloudflare` are published on npm at `0.1.0` (dist-tag `latest`), so the starter can install them without linking the local checkout. The example's other pins: `effect` 4.0.0, `@cloudflare/workers-types` 5.20260929.1.
+
 ## Size
 
 Project with a written design, then a plan. Not yet at the written-design stage.
