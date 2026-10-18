@@ -61,6 +61,8 @@ The sandbox and tooling part of the learning goal is something we add on top of 
 
 Facts checked: `@humanlayer/channels-delivery`, `-github` and `-alchemy-cloudflare` are published on npm at `0.1.0` (dist-tag `latest`), so the starter can install them without linking the local checkout. The example's other pins: `effect` 4.0.0, `@cloudflare/workers-types` 5.20260929.1.
 
+**Version triangle (found in the first live run, 2026-10-18):** `alchemy` 2.0.0-beta.83 needs `effect` 4.0.5 (`effect/Path.make`). `@humanlayer/channels-delivery` 0.1.0 reads `Crypto.randomUUIDv4` as a value, which only works up to effect 4.0.2 (4.0.3 made it a method). No single effect version satisfies both, so the broker pins 4.0.5 and `infra/cloudfare/src/CryptoCompat.ts` bridges the one call. Without it every mailbox alarm crashed and replies were never posted. Remove the shim once the SDK is released against effect 4.0.5. The SDK example in `~/Projects/effect-channels` targets unreleased monorepo main, not the published 0.1.0.
+
 ## Size
 
 Project with a written design, then a plan. Not yet at the written-design stage.
