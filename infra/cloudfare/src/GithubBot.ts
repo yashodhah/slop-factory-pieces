@@ -120,9 +120,12 @@ type HandlerError = GitHubApiError | Config.ConfigError | MailboxSubscriptionErr
 type HandlerRequirements = GitHubApi | RuntimeContext | AgentSessions | MailboxSubscriptions
 
 /**
- * GitHub App callbacks. An authorized mention subscribes the discussion, so later comments reach this mailbox,
- * and hands the delivery to the discussion's AgentSession, which finishes it. Until then the mailbox holds
- * later events back. Mentions require write access or higher.
+ * GitHub App callbacks. An authorized mention hands the delivery to the discussion's AgentSession, which finishes
+ * it. Until then the mailbox holds later events back. Mentions require write access or higher.
+ *
+ * The discussion is deliberately not subscribed: the SDK sends every event of a subscribed discussion, mentions
+ * included, to `onSubscribedIssueEvents` / `onSubscribedPrEvents`, which this bot does not define, so later
+ * mentions would be ignored as `callback_not_configured`. Subscribe once those handlers exist (multi-turn).
  */
 export const githubHandlers = {
 	onMentioned: (event: GitHubMentioned, context: DeliveryContext) => {
@@ -131,7 +134,6 @@ export const githubHandlers = {
 			if (!(yield* respondToMentionAccess(event))) return
 
 			yield* Effect.logInfo('Authorized mention received')
-			yield* discussion.subscribe()
 			const message = yield* Schema.encodeEffect(AgentSessionMessage)(
 				AgentSessionMessage.make({
 					prompt: mentionPrompt(event),

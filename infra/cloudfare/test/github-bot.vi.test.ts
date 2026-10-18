@@ -153,11 +153,12 @@ const runOnMentioned = (
 
 describe('onMentioned with write access', () => {
 	for (const fixture of mentions('@agent why does CI fail?')) {
-		it.effect(`${fixture.name}: reacts, subscribes, sends to the AgentSession, then hands off once`, ({ expect }) =>
+		it.effect(`${fixture.name}: reacts, sends to the AgentSession, then hands off once, without subscribing the discussion`, ({ expect }) =>
 			Effect.gen(function* () {
 				const result = yield* runOnMentioned([fixture], 'write')
 				expect(result.recorded.reactions).toEqual([{ target: fixture.target, reaction: 'eyes' }])
-				expect(result.recorded.subscribed).toEqual([fixture.mailboxKey])
+				// A subscribed discussion routes every later event, mentions included, to onSubscribed*Events, which this bot lacks.
+				expect(result.recorded.subscribed).toEqual([])
 				expect(result.recorded.sent).toHaveLength(1)
 				const [sent] = result.recorded.sent
 				expect(sent?.mailboxKey).toBe(fixture.mailboxKey)
