@@ -15,6 +15,7 @@
 		"@humanlayer/channels-alchemy-cloudflare": "0.1.0",
 		"@humanlayer/channels-delivery": "0.1.0",
 		"@humanlayer/channels-github": "0.1.0",
+		"@humanlayer/channels-jira": "file:./vendor/humanlayer-channels-jira-0.0.0.tgz",
 		"alchemy": "2.0.0-beta.83",
 		"effect": "4.0.0"
 	},
@@ -26,6 +27,7 @@
 		"vitest": "5.0.1"
 	},
 	"overrides": {
+		"@humanlayer/channels-delivery": "0.1.0",
 		"@effect/opentelemetry": "4.0.0",
 		"@effect/platform-browser": "4.0.0",
 		"@effect/platform-bun": "4.0.0",

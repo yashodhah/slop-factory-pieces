@@ -10,6 +10,7 @@
         "@humanlayer/channels-alchemy-cloudflare": "0.1.0",
         "@humanlayer/channels-delivery": "0.1.0",
         "@humanlayer/channels-github": "0.1.0",
+        "@humanlayer/channels-jira": "file:./vendor/humanlayer-channels-jira-0.0.0.tgz",
         "alchemy": "2.0.0-beta.83",
         "effect": "4.0.0",
       },
@@ -32,6 +33,7 @@
     "@effect/sql-pg": "4.0.0",
     "@effect/sql-sqlite-do": "4.0.0",
     "@effect/vitest": "4.0.0",
+    "@humanlayer/channels-delivery": "0.1.0",
     "effect": "4.0.0",
   },
   "packages": {
@@ -128,6 +130,8 @@
     "@humanlayer/channels-delivery": ["@humanlayer/channels-delivery@0.1.0", "", { "peerDependencies": { "effect": "^4.0.0" } }, "sha512-4EREGHIDCDbFiWkHZjAP/Rn/WEDL8T4u6ox+RbibNahhWa8FIcSoLbFFvEEy+wnu0c5zm0tgfEESgVasB6QFLw=="],
 
     "@humanlayer/channels-github": ["@humanlayer/channels-github@0.1.0", "", { "dependencies": { "@humanlayer/channels-delivery": "0.1.0" }, "peerDependencies": { "effect": "^4.0.0" } }, "sha512-4OBdSWXkfwfPYLDpf04a6ZxYNJ4qVjtrpRuvGCvlZ7ofef3F6lQZnqtr1SwEoN6MnAYxMQcRk9NKr5M86LHGcg=="],
+
+    "@humanlayer/channels-jira": ["@humanlayer/channels-jira@./vendor/humanlayer-channels-jira-0.0.0.tgz", { "dependencies": { "@humanlayer/channels-delivery": "0.0.0" }, "peerDependencies": { "effect": "4.0.0" } }, "sha512-XzK6SvwzkZ84FEcvs3sywX3B5I0MYmrjo50yYPh4J58YYO9PFSflPc2C+YIOC9qRINLu9Cg8TmxGbtV8VSuCtw=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 
