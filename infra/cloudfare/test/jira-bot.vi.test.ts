@@ -1,7 +1,7 @@
 import { describe, it } from '@effect/vitest'
 import { JiraApi, JiraApiError, JiraIssueId, JiraIssueRef, JiraMentioned } from '@humanlayer/channels-jira'
 import { RuntimeContext } from 'alchemy/RuntimeContext'
-import { Effect, Layer, Ref } from 'effect'
+import { Effect, Layer, Redacted, Ref } from 'effect'
 
 import type { AgentSessionMessage } from '../src/AgentSessionMessage'
 import { AgentSessions } from '../src/AgentSessionDO'
@@ -84,6 +84,7 @@ describe('Jira onMentioned with /research', () => {
 			expect(sent?.message).toMatchObject({
 				prompt: 'Login times out\nAfter 30 seconds the page hangs.\nwhy is login slow',
 				deliveryId: result.delivery.deliveryId,
+				accessToken: Redacted.value(result.delivery.accessToken),
 				discussion: { id: '10042', key: 'ABC-42', mailboxKey: issue.mailboxKey },
 			})
 			expect(result.handoffs).toBe(1)
