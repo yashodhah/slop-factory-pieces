@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A Jira comment `@slopcodebot /research` on an issue reaches the broker's `AgentSession`, and the mock agent's reply is posted back as a comment by the bot user.
+**Goal:** A Jira comment `@slopcodebot /research` on an issue reaches the broker's `AgentSession`, and the mock agent's reply is posted back as a comment by the bot user (verified with fixtures and fakes; no live Jira site this round).
 
 **Architecture:** A new `packages/jira` provider in the user's fork of the SDK (`/Users/yashodhah/Projects/effect-channels`, `origin` = `git@github.com:yashodhah/effect-channels.git`), modeled on `packages/github` (text-mention parsing, `onMentioned`, comment output) with Linear's layout as the secondary reference. This repo (`infra/cloudfare`) links the package, registers it next to GitHub, and owns the `/research` command parsing, the access policy (none for now) and the mock agent.
 
@@ -58,22 +58,20 @@ Broker, `infra/cloudfare/`: new `src/JiraBot.ts`, `src/JiraCommand.ts`; modified
 
 ---
 
-### Task 1: Spike on the real Jira site (gating)
+### Task 1: Assumptions and hand-written fixtures (no live site)
 
-Needs the user: a bot user, its API token, a way to expose a local port (a tunnel they already use), and admin rights to register a system webhook with a secret. Ask for these; never print the token.
+The user ruled out a live Jira site. No credentials, tunnel or webhook registration are available or needed. Use Atlassian's public docs (WebFetch/WebSearch if available) and the Linear and GitHub packages as references.
 
 **Files:**
-- Create (SDK repo): `packages/jira/test/fixtures/*.json`, `packages/jira/SPIKE.md` (findings, deleted or folded into README at the end)
+- Create (SDK repo): `packages/jira/test/fixtures/*.json`, `packages/jira/ASSUMPTIONS.md`
 
 **Interfaces:**
-- Produces: the recorded facts later tasks rely on: (a) signature header name and format, or "none"; (b) whether `comment_created` carries the comment body as ADF or a string; (c) the mention shape for a mentioned account; (d) whether the payload carries a cloud id or site url; (e) a stable per-delivery id header, if any; (f) the shape accepted by `POST /rest/api/3/issue/{key}/comment` and the bot's own account id from `GET /rest/api/3/myself`.
+- Produces: the facts later tasks rely on, each marked `documented` (with the doc URL) or `assumed`, all unverified against a live site: (a) signature header name and format (expected `X-Hub-Signature: sha256=<hex>`, HMAC-SHA256 of the raw body keyed by the webhook secret; if the docs say otherwise, follow the docs); (b) the `comment_created` payload shape: `webhookEvent`, `timestamp`, `comment` (`id`, `author.accountId`, `author.displayName`, `body`, `created`), `issue` (`id`, `key`, `fields.summary`), and whether `body` is ADF or a string; (c) the ADF mention node (`type: "mention"`, `attrs.id` = account id, `attrs.text`); (d) whether a cloud id is present (assume absent; `site` option is the installation id); (e) the stable event id (assume the comment id; use a delivery header only if the docs name one); (f) the comment-post request for `POST /rest/api/3/issue/{key}/comment` (ADF `body` with one paragraph per block) and `GET /rest/api/3/myself`.
 
-- [ ] **Step 1:** Create branch `jira-channel` in the SDK repo.
-- [ ] **Step 2:** Run a throwaway local server (not committed; keep it in the scratchpad) that writes each request's headers and raw body to files; expose it through a tunnel; register the system webhook (event `comment_created` and `comment_updated`, optional JQL project filter, a secret) pointing at it.
-- [ ] **Step 3:** On a test issue, post: a comment mentioning the bot with `/research`, a plain comment, an edit of one, and a comment by the bot user (post it with the token via curl). Save each body as a redacted fixture (`comment-created-mention.json`, `comment-created-plain.json`, `comment-updated.json`, `comment-created-by-bot.json`) plus the header set.
-- [ ] **Step 4:** Verify by hand that the signature, if present, validates against the raw body with the chosen secret (HMAC-SHA256, hex), and that curl `POST /rest/api/3/issue/<key>/comment` with a minimal ADF paragraph posts a comment authored by the bot.
-- [ ] **Step 5:** Write the findings (a to f) in `packages/jira/SPIKE.md`. If (a) is "none", record the fallback chosen (shared secret in a custom header or the URL, compared in constant time) and tell the user.
-- [ ] **Step 6: Commit** `chore(jira): record webhook fixtures and spike findings`.
+- [ ] **Step 1:** Create branch `jira-channel` in the SDK repo and run `bun install` there if `node_modules` is missing.
+- [ ] **Step 2:** Research (a) to (f) in Atlassian's docs; write `ASSUMPTIONS.md` with each item, its status and its source.
+- [ ] **Step 3:** Write fixtures: `comment-created-mention.json` (bot mentioned in a paragraph with `/research` after it), `comment-created-plain.json`, `comment-created-by-bot.json` (author is the bot's account id), `comment-updated.json`, `comment-created-mention-nested.json` (mention inside a quote or list).
+- [ ] **Step 4: Commit** `chore(jira): record documented assumptions and fixtures`.
 
 ---
 
@@ -86,17 +84,17 @@ Needs the user: a bot user, its API token, a way to expose a local port (a tunne
 
 **Interfaces:**
 - Produces, in `JiraIdentity.ts`: `JiraAccountId`, `JiraIssueId` (branded strings, `Schema`), `jiraIssueResourceId(input: { readonly issueId: JiraIssueId }): string` returning `jira:v1:issue:<issueId>` (encoded like `githubDiscussionResourceId`).
-- Produces: `verifyJiraWebhookSignature(input: { body: Uint8Array; signature: string; webhookSecret: Redacted<string> }): Effect<void, WebhookAuthenticationError, Crypto.Crypto>` (mirror `verifyGitHubWebhookSignature`; header and format from SPIKE.md).
+- Produces: `verifyJiraWebhookSignature(input: { body: Uint8Array; signature: string; webhookSecret: Redacted<string> }): Effect<void, WebhookAuthenticationError, Crypto.Crypto>` (mirror `verifyGitHubWebhookSignature`; header and format from ASSUMPTIONS.md).
 - Produces: `makeJiraWebhookProvider(options: { readonly namespace: string; readonly webhookSecret: Redacted<string>; readonly site: string }): WebhookProvider<Crypto.Crypto>` with `providerName: 'jira'`.
 - Produces in `test/fixtures.ts`: `signedJiraInput(fixture: string, secret: string): WebhookInput` (signs a fixture with the same algorithm).
 
 - [ ] **Step 1: Failing tests** in `jira-webhook-signature.vi.test.ts`: a body signed with the secret passes; a wrong secret fails with `WebhookAuthenticationError{reason:'invalid_signature'}`; a missing/malformed header fails the same way.
 - [ ] **Step 2: Failing tests** in `jira-webhook-routing.vi.test.ts` (copy the shape of `packages/github/test/github-webhook-routing.vi.test.ts`):
-  - `comment-created-mention.json` → `ProviderWebhookEvent` whose admission has `provider: 'jira'`, `resourceId` equal to `jiraIssueResourceId` of the fixture's issue id, and `eventId` equal to the stable id from SPIKE.md (the delivery header if any, else the comment id), identical on two deliveries of the same fixture;
+  - `comment-created-mention.json` → `ProviderWebhookEvent` whose admission has `provider: 'jira'`, `resourceId` equal to `jiraIssueResourceId` of the fixture's issue id, and `eventId` equal to the stable id from ASSUMPTIONS.md (the delivery header if any, else the comment id), identical on two deliveries of the same fixture;
   - `comment-updated.json` → `ProviderWebhookIgnored`;
   - an unsupported `webhookEvent` → `ProviderWebhookIgnored`; invalid JSON → `WebhookPayloadInvalidError{reason:'invalid_json'}`.
 - [ ] **Step 3:** Run `bun run test packages/jira` from the SDK root (`vp test` per root script). Expected: FAIL, modules missing.
-- [ ] **Step 4:** Implement the files above. Package files: copy `packages/github/package.json` and `tsconfig.json`, rename to `@humanlayer/channels-jira`, drop the `@emulators/*` dev dependencies. Webhook provider follows `makeGitHubWebhookProvider`: verify signature, decode JSON, decode the schema from SPIKE.md, ignore unsupported, admit with `installationId` = payload cloud id when present, else `options.site`.
+- [ ] **Step 4:** Implement the files above. Package files: copy `packages/github/package.json` and `tsconfig.json`, rename to `@humanlayer/channels-jira`, drop the `@emulators/*` dev dependencies. Webhook provider follows `makeGitHubWebhookProvider`: verify signature, decode JSON, decode the schema from ASSUMPTIONS.md, ignore unsupported, admit with `installationId` = payload cloud id when present, else `options.site`.
 - [ ] **Step 5:** Run the two test files and `bun run typecheck`. Expected: PASS.
 - [ ] **Step 6: Commit** `feat(jira): webhook provider with signature verification`.
 
@@ -110,7 +108,7 @@ Needs the user: a bot user, its API token, a way to expose a local port (a tunne
 
 **Interfaces:**
 - Consumes: Task 2's identity, schemas and provider.
-- Produces, `JiraComment.ts`: `commentPlainText(body: unknown): string` (ADF or string per SPIKE.md; mentions rendered as `@<displayName>`); `mentionedAccountIds(body: unknown): ReadonlyArray<string>` (walks nested ADF content); `textAfterMention(body: unknown, accountId: string): string | undefined` (plain text following the first mention of that account, trimmed).
+- Produces, `JiraComment.ts`: `commentPlainText(body: unknown): string` (ADF or string per ASSUMPTIONS.md; mentions rendered as `@<displayName>`); `mentionedAccountIds(body: unknown): ReadonlyArray<string>` (walks nested ADF content); `textAfterMention(body: unknown, accountId: string): string | undefined` (plain text following the first mention of that account, trimmed).
 - Produces, `JiraCallbackEvents.ts`: `JiraIssueRef`, a `Schema.Struct` (`{ id: JiraIssueId; key: string; mailboxKey: string }`) and `JiraMentioned` (`{ _tag: 'JiraMentioned'; issue: JiraIssueRef; comment: { id: string; body: string; afterMention: string; author: { accountId: string; displayName: string } }; eventId: string }`).
 - Produces, `JiraCallbacks.ts`: `JiraCallbackHandlers<E, R>` with optional `onMentioned: (event: JiraMentioned, delivery: DeliveryContext) => Effect<DeliveryCallbackResult, E, R>`, `makeJiraCallbacks`, `JiraCallbackError` (same wrapping and retryability rules as `GitHubCallbacks.ts`).
 - Produces, `JiraEventProcessor.ts`: `JiraBotConfiguration` (`{ accountId: JiraAccountId }`) and `makeJiraEventProcessor<E, R>(options: { namespace: string; bot: JiraBotConfiguration; handlers: JiraCallbackHandlers<E, R> }): ProviderEventProcessor<JiraApi | R>`.
@@ -140,7 +138,7 @@ Needs the user: a bot user, its API token, a way to expose a local port (a tunne
 - Consumes: Task 3's destination, events and processor.
 - Produces, `JiraApi.ts`: `JiraApi` `Context.Service` with `postComment(input: { issueKey: string; markdown: string }): Effect<{ commentId: string }, JiraApiError>`, `fetchIssue(issueKey: string): Effect<{ key: string; title: string; description: string | null }, JiraApiError>`, `myself(): Effect<{ accountId: string }, JiraApiError>`; `JiraApiError` tagged with `operation`, `retryable`, `retryAfterMs?`.
 - Produces, `JiraApiLive.ts`: `JiraApiLive: Layer<JiraApi, Config.ConfigError, HttpClient>` reading `JIRA_BASE_URL`, `JIRA_BOT_EMAIL`, `JIRA_API_TOKEN` (Redacted); requests use `Authorization: Basic base64(email:token)`. `markdown` becomes an ADF document with one paragraph per blank-line-separated block (plain text; no markdown rendering).
-- Produces, `JiraDeliveryOutput.ts`: `makeJiraOutputProcessor(options: { namespace: string }): ProviderOutputProcessor` handling `PresentOutcome` and `CreateMessage` (post comment, return `DeliveryOutputApplied` with a receipt holding the comment id), `UpdateMessage` and `DeleteMessage` per the API if the SPIKE shows them cheap, else `unsupported_operation` non-retryable; 429 and 5xx map to retryable `DeliveryOutputFailed`.
+- Produces, `JiraDeliveryOutput.ts`: `makeJiraOutputProcessor(options: { namespace: string }): ProviderOutputProcessor` handling `PresentOutcome` and `CreateMessage` (post comment, return `DeliveryOutputApplied` with a receipt holding the comment id), `UpdateMessage` and `DeleteMessage` per the API if ASSUMPTIONS.md shows them cheap, else `unsupported_operation` non-retryable; 429 and 5xx map to retryable `DeliveryOutputFailed`.
 - Produces, `JiraBot.ts`: `make<E, R>(options: { webhookSecret: Config<Redacted<string>>; deliveryMode: DeliveryMode; bot: JiraBotConfiguration | Config<JiraBotConfiguration>; site: Config<string>; handlers: JiraCallbackHandlers<E, R> }): ChannelsProvider<{ build: never; process: R | JiraApi; error: Config.ConfigError }>`, same shape and the same "also read the bot config in the webhook half" trick as `GitHubBot.make`.
 
 - [ ] **Step 1: Failing tests** with a fake `HttpClient` (copy the style of `github-api-live.vi.test.ts`): `postComment` sends `POST /rest/api/3/issue/ABC-1/comment` with the basic-auth header and an ADF body of two paragraphs for `"a\n\nb"`; `fetchIssue` maps title and description; a 429 maps to `retryable: true`.
@@ -209,14 +207,11 @@ Needs the user: a bot user, its API token, a way to expose a local port (a tunne
 
 ---
 
-### Task 8: Local run, then real end-to-end
+### Task 8: Local run (no live Jira)
 
 **Files:**
-- Modify: `README.md` (how to run and verify), none else.
+- Modify: `README.md` (env vars, webhook setup, and what is unverified)
 
-- [ ] **Step 1 (local, no Jira):** start the worker locally (command in the README or `alchemy dev`); `curl` the signed `comment-created-mention.json` fixture to `/integrations/jira/webhook` using the secret from `.env`. Expected: 2xx, logs show the authorized mention, the `AgentSession` send, the handoff, and the delivery completing. Repeat with the bot-authored and `comment-updated` fixtures: 2xx and nothing sent.
-- [ ] **Step 2:** Point the real system webhook (from Task 1) at the deployed worker or tunnel; deploy with the env set (`bun run alchemy:deploy`).
-- [ ] **Step 3:** On the test issue, comment `@slopcodebot /research`. Expected: a comment from the bot user with the echo reply, no duplicate on a webhook redelivery.
-- [ ] **Step 4:** Comment `@slopcodebot` alone, `@slopcodebot /foo`, edit a comment to add the mention, and let the bot's reply stand. Expected: no new bot comments, no agent logs.
-- [ ] **Step 5:** Record the outcome of each check in the README "Verified" note; push the SDK branch to the fork and open nothing else without asking the user.
-- [ ] **Step 6: Commit** `docs: how the Jira channel was verified`.
+- [ ] **Step 1:** Start the worker locally (command in the README or `alchemy dev`); `curl` the signed `comment-created-mention.json` fixture to `/integrations/jira/webhook` with the secret from `.env`. Expected: 2xx, logs show the authorized mention, the `AgentSession` send, the handoff, and the delivery completing; the Jira comment post is the only step that cannot succeed without a real site, so run with the API stubbed or accept and record its failure. Repeat with the bot-authored and `comment-updated` fixtures: 2xx and nothing sent. If the local worker cannot run without live credentials, say so in the README and rely on the unit and routing tests.
+- [ ] **Step 2:** Add a README section "Unverified against a live Jira site" copied from `ASSUMPTIONS.md` and the checks to run when a site is available (the former steps 2 to 4: deploy, comment `@slopcodebot /research`, then the no-command, edit and bot-reply cases).
+- [ ] **Step 3: Commit** `docs: how the Jira channel is run and what is unverified`.

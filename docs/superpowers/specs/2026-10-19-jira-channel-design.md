@@ -69,7 +69,7 @@ This is a plumbing exercise. The agent stays a mock. Nothing about real research
 ## Calls made by the author (not discussed with the user; change if wrong)
 
 - **Effect versions already match.** The fork's `overrides` and this repo both pin `effect` and `@effect/*` at 4.0.0, so the link needs no version reconciliation. Whether Wrangler/alchemy can bundle a `link:` target outside this repo is unverified; the builder checks it first. Fallbacks, in order: `file:` tarball from `bun pm pack`, then moving the folder inside this repo.
-- **Spike first.** Step 1 of the plan is a short spike against the real test site: capture one real `comment_created` webhook, and record (a) the signature header, if any, and its format, (b) whether the payload carries the comment body as ADF and the site/cloud id, (c) the mention shape. Signature verification, fixtures and the mention parser are built from those captures, not from assumptions. If there is no HMAC, the fallback is a shared secret in a custom header or the URL, compared in constant time.
+- **Assumptions first (no live site).** Step 1 of the plan writes fixtures and ASSUMPTIONS.md from Atlassian's documentation instead of a live spike. Record (a) the signature header, if any, and its format, (b) whether the payload carries the comment body as ADF and the site/cloud id, (c) the mention shape. Signature verification, fixtures and the mention parser are built from those captures, not from assumptions. If there is no HMAC, the fallback is a shared secret in a custom header or the URL, compared in constant time.
 - **Installation id.** The Jira cloud id if the payload carries it, else the site's base-URL host from config. Fixed once chosen, since it is part of the mailbox key.
 - **Mention detection stays in the webhook path.** If the payload lacks the comment body, the channel fetches the comment through `JiraApi` before filtering; the builder decides the failure semantics (suggested: retryable error).
 - **Issue fetch.** Title and description are fetched in this repo's handler (control-plane side) through the package's `JiraApi`. If the fetch fails, proceed with the comment text alone.
@@ -95,14 +95,14 @@ Four layers, cheapest first. Layers 1 to 3 need no credentials.
    - a failed issue fetch falls back to the comment text alone;
    - the mock agent sets `Working` and completes the delivery with its canned reply.
 3. **Local run without Jira.** Run the worker locally and `curl` a signed fixture to `/integrations/jira/webhook`, covering routing, signature check, Durable Objects and handoff end to end, with the comment post stubbed.
-4. **Real end-to-end on the user's Jira site** (worker deployed or tunneled, system webhook pointed at it): comment `@slopcodebot /research` on a test issue and see the bot user's reply. Then check live that a mention without a command, an edited comment and the bot's own comment each produce nothing. The spike's findings (signature header, comment format) are confirmed here.
+4. **(Out of scope this round: no live site.) Real end-to-end on the user's Jira site** (worker deployed or tunneled, system webhook pointed at it): comment `@slopcodebot /research` on a test issue and see the bot user's reply. Then check live that a mention without a command, an edited comment and the bot's own comment each produce nothing. The spike's findings (signature header, comment format) are confirmed here.
 
 ## Verification environment
 
-The user will test against their real Jira Cloud site: a bot user with its API token and a reachable deployed worker or tunnel. The spike and the "Done when" checks use real events, not only fixtures. The user supplies the credentials and site details when the builder needs them.
+**Changed by the user after approval: no live Jira site.** The channel is built from Atlassian's documentation and the Linear/GitHub packages as references, and tested with hand-written fixtures and fakes (testing layers 1 to 3). Layer 4 (real end-to-end) is out of scope for this round. Every assumption about Jira's real behavior (signature header and format, `comment_created` payload shape, ADF mention nodes, the comment-post body) is recorded in `packages/jira/ASSUMPTIONS.md` as unverified, so a later live run knows what to check.
 
 ## Done when
 
-- A Jira comment `@slopcodebot /research` on a test issue produces a comment from the bot user containing the mock agent's reply.
+- Against fixtures and a local worker: a signed `comment_created` fixture mentioning the bot with `/research` leads to the mock agent completing the delivery and a comment-post request for the right issue (against a fake Jira API). Not verified against a real site.
 - A mention without `/research`, an edited comment, and a comment by the bot itself each produce no reply and no agent run.
 - The SDK fork's tests for the new package pass, and this repo's tests pass.
