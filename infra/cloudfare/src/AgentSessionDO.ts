@@ -44,7 +44,7 @@ const AgentSessionImplementation = Effect.gen(function* () {
 		return {
 			send: Effect.fn('agent_session.send')(function* (input: typeof AgentSessionMessage.Encoded) {
 				const message = yield* Schema.decodeEffect(AgentSessionMessage)(input).pipe(Effect.orDie)
-				if (message.githubDiscussion.mailboxKey !== mailboxKey) {
+				if (message.discussion.mailboxKey !== mailboxKey) {
 					return yield* Effect.die(
 						new Error('AgentSession message does not match this Durable Object mailbox key'),
 					)

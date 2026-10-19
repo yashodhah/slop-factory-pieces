@@ -16,7 +16,7 @@ import { answer } from '../src/EchoAgent'
 
 const message = AgentSessionMessage.make({
 	prompt: 'why does CI fail?',
-	githubDiscussion: GitHubIssue.make({
+	discussion: GitHubIssue.make({
 		ref: GitHubIssueRef.make({
 			installationId: GitHubId.make(100),
 			repositoryId: GitHubId.make(200),

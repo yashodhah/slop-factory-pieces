@@ -137,7 +137,7 @@ export const githubHandlers = {
 			const message = yield* Schema.encodeEffect(AgentSessionMessage)(
 				AgentSessionMessage.make({
 					prompt: mentionPrompt(event),
-					githubDiscussion: discussion,
+					discussion,
 					deliveryId: context.deliveryId,
 					accessToken: context.accessToken,
 				}),
