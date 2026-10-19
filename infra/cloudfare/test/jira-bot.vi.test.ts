@@ -1,7 +1,8 @@
 import { describe, it } from '@effect/vitest'
 import { JiraApi, JiraApiError, JiraIssueId, JiraIssueRef, JiraMentioned } from '@humanlayer/channels-jira'
 import { RuntimeContext } from 'alchemy/RuntimeContext'
-import { Effect, Layer, Redacted, Ref } from 'effect'
+import { Effect, Fiber, Layer, Redacted, Ref } from 'effect'
+import { TestClock } from 'effect/testing'
 
 import type { AgentSessionMessage } from '../src/AgentSessionMessage'
 import { AgentSessions } from '../src/AgentSessionDO'
@@ -113,6 +114,24 @@ describe('Jira onMentioned with /research', () => {
 			expect(prompt).toContain('look at X')
 			expect(prompt).not.toContain('Login times out')
 			expect(result.handoffs).toBe(1)
+		}),
+	)
+})
+
+describe('Jira onMentioned when fetching the issue hangs', () => {
+	it.effect('gives up after 5 seconds and sends the comment-only prompt', ({ expect }) =>
+		Effect.gen(function* () {
+			const fiber = yield* runOnMentioned(mention('/research look at X'), { fetchIssue: () => Effect.never }).pipe(
+				Effect.forkChild,
+			)
+			yield* TestClock.adjust('4999 millis')
+			expect(fiber.pollUnsafe()).toBeUndefined()
+			yield* TestClock.adjust('1 millis')
+			expect(fiber.pollUnsafe()).toBeDefined()
+			const result = yield* Fiber.join(fiber)
+			expect(result.recorded.sent).toHaveLength(1)
+			expect(result.recorded.sent[0]?.message.prompt).toBe('Jira issue ABC-42\nlook at X')
+			expect(result.handoffOptions).toEqual([{ failAfter: '10 minutes' }])
 		}),
 	)
 })

@@ -15,7 +15,7 @@
 		"@humanlayer/channels-alchemy-cloudflare": "0.1.0",
 		"@humanlayer/channels-delivery": "0.1.0",
 		"@humanlayer/channels-github": "0.1.0",
-		"@humanlayer/channels-jira": "file:./vendor/humanlayer-channels-jira-0.0.0-ea6c5ef.tgz",
+		"@humanlayer/channels-jira": "file:./vendor/humanlayer-channels-jira-0.0.0-727e59e.tgz",
 		"alchemy": "2.0.0-beta.83",
 		"effect": "4.0.0"
 	},

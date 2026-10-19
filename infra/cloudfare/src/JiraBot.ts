@@ -44,6 +44,7 @@ export const jiraPrompt = (input: {
 	})
 
 const HANDOFF_FAIL_AFTER = '10 minutes'
+const FETCH_ISSUE_TIMEOUT = '5 seconds'
 
 type HandlerError = DeliveryHandoffError
 type HandlerRequirements = JiraApi | RuntimeContext | AgentSessions
@@ -67,7 +68,9 @@ export const makeJiraHandlers = (
 				}
 
 				const api = yield* JiraApi
+				/** A hung fetch must not stall the run: after the timeout the prompt has the comment alone. */
 				const issue = yield* api.fetchIssue(event.issue.key).pipe(
+					Effect.timeout(FETCH_ISSUE_TIMEOUT),
 					Effect.map(Option.some),
 					Effect.catch((error) =>
 						Effect.logWarning('Could not fetch the Jira issue; prompting with the comment alone', error).pipe(
