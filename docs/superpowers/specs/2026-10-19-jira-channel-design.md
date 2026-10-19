@@ -81,6 +81,22 @@ This is a plumbing exercise. The agent stays a mock. Nothing about real research
 - File names, and test depth beyond the cases above.
 - How the signed-webhook fixtures and a local end-to-end check (for example a curl-posted fixture against the local worker) are done.
 
+## Testing
+
+Four layers, cheapest first. Layers 1 to 3 need no credentials.
+
+1. **Package tests in the fork** (`@effect/vitest`, `test/jira-*.vi.test.ts`), using payloads captured in the spike and a signing fixture builder:
+   - webhook: valid signature accepted; bad or missing signature rejected;
+   - mention filter: a bot mention passes; a plain comment, an edit and a comment by the bot itself are ignored;
+   - mailbox key is stable for the same issue;
+   - output: a completed delivery posts a comment to the right issue with the right body, against a fake HTTP client.
+2. **Handler tests in this repo** (`infra/cloudfare/test`, beside the GitHub ones):
+   - `@bot /research` sends a message to the issue's `AgentSession`; a missing or unknown command does nothing;
+   - a failed issue fetch falls back to the comment text alone;
+   - the mock agent sets `Working` and completes the delivery with its canned reply.
+3. **Local run without Jira.** Run the worker locally and `curl` a signed fixture to `/integrations/jira/webhook`, covering routing, signature check, Durable Objects and handoff end to end, with the comment post stubbed.
+4. **Real end-to-end on the user's Jira site** (worker deployed or tunneled, system webhook pointed at it): comment `@slopcodebot /research` on a test issue and see the bot user's reply. Then check live that a mention without a command, an edited comment and the bot's own comment each produce nothing. The spike's findings (signature header, comment format) are confirmed here.
+
 ## Verification environment
 
 The user will test against their real Jira Cloud site: a bot user with its API token and a reachable deployed worker or tunnel. The spike and the "Done when" checks use real events, not only fixtures. The user supplies the credentials and site details when the builder needs them.
