@@ -31,12 +31,13 @@ const namespace = 'slop-code-factory'
 const seamWebhookKey = 'jira-seam-test-key'
 const botAccountId = '5b10ac8d82e05b22cc7d4ef5'
 const fakeApiCredential = 'not-a-real-value'
+const fakeCloudId = '11111111-2222-4333-8444-555555555555'
 
 /** The five values the Jira provider reads, as the Worker's environment would hold them. */
 const jiraEnvironment: Readonly<Record<string, string>> = {
 	JIRA_WEBHOOK_SECRET: seamWebhookKey,
 	JIRA_BASE_URL: 'https://Example.Atlassian.NET/',
-	JIRA_BOT_EMAIL: 'bot@example.com',
+	JIRA_CLOUD_ID: fakeCloudId,
 	JIRA_API_TOKEN: fakeApiCredential,
 	JIRA_BOT_ACCOUNT_ID: botAccountId,
 }
@@ -142,6 +143,31 @@ describe('Jira provider configuration', () => {
 			}),
 		)
 	}
+
+	it.effect('requires exactly these five variables, and no JIRA_BOT_EMAIL', ({ expect }) =>
+		Effect.gen(function* () {
+			expect(Object.keys(jiraEnvironment).sort()).toEqual([
+				'JIRA_API_TOKEN',
+				'JIRA_BASE_URL',
+				'JIRA_BOT_ACCOUNT_ID',
+				'JIRA_CLOUD_ID',
+				'JIRA_WEBHOOK_SECRET',
+			])
+			expect(jiraEnvironment).not.toHaveProperty('JIRA_BOT_EMAIL')
+			const provider = yield* buildWebhookProvider(jiraEnvironment)
+			expect(provider.providerName).toBe('jira')
+		}),
+	)
+
+	it.effect('fails with a ConfigError naming JIRA_CLOUD_ID when it is not a UUID', ({ expect }) =>
+		Effect.gen(function* () {
+			const error = yield* buildWebhookProvider({ ...jiraEnvironment, JIRA_CLOUD_ID: 'your-site.atlassian.net' }).pipe(
+				Effect.flip,
+			)
+			expect(error).toBeInstanceOf(Config.ConfigError)
+			expect(String(error)).toContain('JIRA_CLOUD_ID')
+		}),
+	)
 
 	it.effect('uses the lowercase host of JIRA_BASE_URL as the site', ({ expect }) =>
 		Effect.gen(function* () {

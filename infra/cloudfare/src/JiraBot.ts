@@ -108,6 +108,11 @@ export const makeJiraHandlers = (
 
 export const jiraHandlers = makeJiraHandlers()
 
+/**
+ * Reads five variables: `JIRA_WEBHOOK_SECRET`, `JIRA_BASE_URL` (the site, used only for the mailbox key) and
+ * `JIRA_BOT_ACCOUNT_ID` here, and `JIRA_CLOUD_ID` and `JIRA_API_TOKEN` in the SDK's default `JiraApiLive`, which
+ * calls the Atlassian API gateway with the service account's token as a Bearer token.
+ */
 export const jira = JiraBot.make<HandlerError, HandlerRequirements>({
 	webhookSecret: Config.Redacted('JIRA_WEBHOOK_SECRET'),
 	deliveryMode: DebounceDeliveryMode.make({ quietPeriodMs: 3_000, maxWaitMs: 3_000 }),
