@@ -31,12 +31,20 @@ Set these in `.env` (never committed; see `.env.example` for the names). The Wor
 4. As a Jira admin, add a system webhook: URL `<worker-url>/integrations/jira/webhook`, event `comment_created` (optionally a JQL filter such as `project = ABC`), secret = `JIRA_WEBHOOK_SECRET`.
 5. Comment `@<bot> /research <optional text>` on an issue. A mention without a known command is ignored silently.
 
+## What a `/research` mention does on Jira
+
+1. Acknowledge: right after the mention is authorized and its command recognised, the bot comments `👀 On it` on the issue (no mention). This is best effort: if posting fails or takes over 5 seconds, a warning is logged and the run continues. Ignored mentions (no command, unknown command, denied) get no acknowledgement.
+2. Work: the AgentSession runs the echo agent, which sets `Working` and then waits `MOCK_WORK_DURATION` (5 seconds, in `src/EchoAgent.ts`). The wait stands in for real agent work and goes away when the real agent replaces the echo agent. It applies to GitHub too.
+3. Reply: the echo reply is posted as a new comment that starts with an @-mention of the person who asked. The mention comes from the signed webhook's comment author, saved with the delivery; it is never parsed from text, and the reply's text (which quotes the issue) is posted as plain text only.
+
+Jira Cloud's REST API has no comment reactions and no comment threads, so the 👀 reaction and the threaded reply are emulated: the reaction by a separate comment, the reply by a mention of the requester. The bot's own comments (the acknowledgement and the reply) are authored by the bot account and ignored, so they never start another run.
+
 ## Repacking the vendored Jira package
 
 `@humanlayer/channels-jira` is installed from a tarball in `vendor/`. To update it:
 
 1. In the SDK checkout, `cd packages/jira && bun pm pack`.
-2. Rename the `.tgz` to include the SDK short commit hash, e.g. `humanlayer-channels-jira-0.0.0-fd63838.tgz` (current file in `vendor/`). Always use a fresh filename: bun caches `file:` tarballs by name and would otherwise reuse a stale entry. Move it into `vendor/`, delete the old one, and point `@humanlayer/channels-jira` in `package.json` at `file:./vendor/<new-file>.tgz`.
+2. Rename the `.tgz` to include the SDK short commit hash, e.g. `humanlayer-channels-jira-0.0.0-85830e9.tgz` (current file in `vendor/`). Always use a fresh filename: bun caches `file:` tarballs by name and would otherwise reuse a stale entry. Move it into `vendor/`, delete the old one, and point `@humanlayer/channels-jira` in `package.json` at `file:./vendor/<new-file>.tgz`.
 3. `bun install`, then `bun run test` and `bun run typecheck`.
 
 ## Running locally
@@ -53,6 +61,8 @@ Verified on 2026-10-19 against a real site (a real curl): authentication and `my
 - Mention node: `{ type: "mention", attrs: { id, text, accessLevel } }` inline in a paragraph, possibly nested in blockquotes or lists; the command text follows as a separate `text` node. Recalled from the ADF spec, not re-fetched.
 - Event id: `comment_created:<comment.id>`, from the signed body. The documented `X-Atlassian-Webhook-Identifier` header is ignored because the signature does not cover it (a replay with a fresh header would start a second run).
 - Comment post: `POST /ex/jira/<cloudId>/rest/api/3/issue/{key}/comment` through the gateway with the Bearer token, `{ body: <ADF doc> }`, one paragraph per block. Assumed to work like `myself`; not verified.
+- Acknowledgement and reply comments: both go through the same comment post as above (gateway, Bearer token); neither has been posted to a real site.
+- Posted mention node: the reply's first paragraph is `{ "type": "mention", "attrs": { "id": "<accountId>", "text": "@<displayName>" } }` followed by a `text` node starting with a space. Not verified that Jira accepts this shape (without `accessLevel`) on a post, renders it as a mention, or notifies the requester.
 - Issue fetch: `GET /ex/jira/<cloudId>/rest/api/3/issue/{key}?fields=summary,description` through the gateway with the Bearer token. Not verified.
 - Cloudflare/alchemy bundling of the vendored TypeScript tarball is unproven (the package ships `.ts` sources; only `bun run test` and `bun run typecheck` have consumed it).
 
@@ -61,7 +71,7 @@ Behaviour to know: comment posting is at-least-once (Jira has no idempotency key
 Checks to run when a site is available:
 
 1. Deploy, set the `JIRA_*` variables, and add the system webhook (see Jira setup).
-2. Comment `@<bot> /research <text>` on an issue: expect exactly one reply from the bot.
+2. Comment `@<bot> /research <text>` on an issue: expect a `👀 On it` comment at once, then, about 5 seconds later, exactly one reply that starts with a mention of you (and notifies you).
 3. A mention without a command, an edited comment (`comment_updated`), and a bot-authored reply must each produce nothing.
 4. Redeliver the same webhook from Jira: still one reply in total.
 5. If any of these fail, compare the real payload and headers with the assumptions above and fix the channel package, not this Worker.

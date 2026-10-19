@@ -12,7 +12,7 @@ import { TestClock } from 'effect/testing'
 
 import { AgentSessionMessage } from '../src/AgentSessionMessage'
 import { DeliveryApi } from '../src/DeliveryApi'
-import { answer } from '../src/EchoAgent'
+import { answer, MOCK_WORK_DURATION } from '../src/EchoAgent'
 
 const message = AgentSessionMessage.make({
 	prompt: 'why does CI fail?',
@@ -55,11 +55,35 @@ const fakeDeliveryApi = (failures: ReadonlyArray<DeliveryNotFound | DeliveryClos
 		return { calls, order, activity, layer }
 	})
 
+/** Run `answer` past the mock work delay on the TestClock. */
+const answerPastDelay = (layer: Layer.Layer<DeliveryApi>) =>
+	Effect.gen(function* () {
+		const fiber = yield* answer(message).pipe(Effect.provide(layer), Effect.forkChild)
+		yield* TestClock.adjust(MOCK_WORK_DURATION)
+		yield* Fiber.join(fiber)
+	})
+
 describe('answer', () => {
+	it.effect('waits the 5 second mock work duration after Working, then completes', () =>
+		Effect.gen(function* () {
+			expect(MOCK_WORK_DURATION).toBe('5 seconds')
+			const { calls, order, layer } = yield* fakeDeliveryApi([])
+			const fiber = yield* answer(message).pipe(Effect.provide(layer), Effect.forkChild)
+			yield* TestClock.adjust('4999 millis')
+			expect(yield* Ref.get(order)).toEqual(['activity'])
+			expect(yield* Ref.get(calls)).toHaveLength(0)
+			expect(fiber.pollUnsafe()).toBeUndefined()
+			yield* TestClock.adjust('1 millis')
+			yield* Fiber.join(fiber)
+			expect(yield* Ref.get(order)).toEqual(['activity', 'complete'])
+			expect(yield* Ref.get(calls)).toHaveLength(1)
+		}),
+	)
+
 	it.effect('completes the delivery once with the echo reply, the delivery id and the token', () =>
 		Effect.gen(function* () {
 			const { calls, layer } = yield* fakeDeliveryApi([])
-			yield* answer(message).pipe(Effect.provide(layer))
+			yield* answerPastDelay(layer)
 			const all = yield* Ref.get(calls)
 			expect(all).toHaveLength(1)
 			expect(all[0]?.deliveryId).toBe(message.deliveryId)
@@ -72,7 +96,7 @@ describe('answer', () => {
 	it.effect('shows Working before it completes, so GitHub clears the eyes reaction', () =>
 		Effect.gen(function* () {
 			const { order, activity, layer } = yield* fakeDeliveryApi([])
-			yield* answer(message).pipe(Effect.provide(layer))
+			yield* answerPastDelay(layer)
 			expect(yield* Ref.get(order)).toEqual(['activity', 'complete'])
 			expect(yield* Ref.get(activity)).toMatchObject([{ _tag: 'Working' }])
 		}),
@@ -82,6 +106,7 @@ describe('answer', () => {
 		Effect.gen(function* () {
 			const { calls, layer } = yield* fakeDeliveryApi([new DeliveryNotFound(), new DeliveryNotFound()])
 			const fiber = yield* answer(message).pipe(Effect.provide(layer), Effect.forkChild)
+			yield* TestClock.adjust(MOCK_WORK_DURATION)
 			yield* TestClock.adjust('10 seconds')
 			yield* TestClock.adjust('10 seconds')
 			yield* Fiber.join(fiber)
@@ -92,7 +117,7 @@ describe('answer', () => {
 	it.effect('treats an already closed delivery as done without more calls', () =>
 		Effect.gen(function* () {
 			const { calls, layer } = yield* fakeDeliveryApi([new DeliveryClosed()])
-			yield* answer(message).pipe(Effect.provide(layer))
+			yield* answerPastDelay(layer)
 			expect(yield* Ref.get(calls)).toHaveLength(1)
 		}),
 	)

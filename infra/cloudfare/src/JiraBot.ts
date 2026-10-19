@@ -1,6 +1,7 @@
 /**
- * The Jira provider: a comment that mentions the bot with a known `/command` hands the delivery to the issue's
- * AgentSession. Mentions without a known command are ignored silently (no reply, no agent run).
+ * The Jira provider: a comment that mentions the bot with a known `/command` is acknowledged with a `👀 On it`
+ * comment, then the delivery is handed to the issue's AgentSession. Mentions without a known command, or denied by
+ * the access policy, are ignored silently (no acknowledgement, no reply, no agent run).
  */
 import {
 	DebounceDeliveryMode,
@@ -45,6 +46,9 @@ export const jiraPrompt = (input: {
 
 const HANDOFF_FAIL_AFTER = '10 minutes'
 const FETCH_ISSUE_TIMEOUT = '5 seconds'
+const ACK_TIMEOUT = '5 seconds'
+/** Jira has no comment reactions, so the acknowledgement is a comment of its own. */
+export const JIRA_ACK_MARKDOWN = '👀 On it'
 
 type HandlerError = DeliveryHandoffError
 type HandlerRequirements = JiraApi | RuntimeContext | AgentSessions
@@ -68,6 +72,12 @@ export const makeJiraHandlers = (
 				}
 
 				const api = yield* JiraApi
+				/** Best effort: a failed or hung acknowledgement is logged and never blocks the run. */
+				yield* api.postComment({ issueKey: event.issue.key, markdown: JIRA_ACK_MARKDOWN }).pipe(
+					Effect.timeout(ACK_TIMEOUT),
+					Effect.catch((error) => Effect.logWarning('Could not acknowledge the Jira mention; continuing', error)),
+					Effect.asVoid,
+				)
 				/** A hung fetch must not stall the run: after the timeout the prompt has the comment alone. */
 				const issue = yield* api.fetchIssue(event.issue.key).pipe(
 					Effect.timeout(FETCH_ISSUE_TIMEOUT),

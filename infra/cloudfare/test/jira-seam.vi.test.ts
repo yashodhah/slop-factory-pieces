@@ -75,6 +75,7 @@ describe('Jira seam: signed webhook -> provider -> event processor -> jiraHandle
 
 			const sent = yield* Ref.make<ReadonlyArray<{ readonly name: string; readonly message: typeof AgentSessionMessage.Encoded }>>([])
 			const fetched = yield* Ref.make<ReadonlyArray<string>>([])
+			const posted = yield* Ref.make<ReadonlyArray<{ readonly issueKey: string; readonly markdown: string }>>([])
 			const delivery = yield* makeFakeDeliveryContext(mailboxKey)
 			const execution = new ProviderDeliveryExecution({
 				deliveryId: delivery.context.deliveryId,
@@ -94,6 +95,8 @@ describe('Jira seam: signed webhook -> provider -> event processor -> jiraHandle
 						Ref.update(fetched, (keys) => [...keys, key]).pipe(
 							Effect.as({ key, title: 'Add rate limiting', description: null }),
 						),
+					postComment: (input) =>
+						Ref.update(posted, (all) => [...all, input]).pipe(Effect.as({ commentId: '20001' })),
 				}),
 				Layer.succeed(
 					AgentSessions,
@@ -111,6 +114,7 @@ describe('Jira seam: signed webhook -> provider -> event processor -> jiraHandle
 
 			expect(result).toEqual(ProviderEventHandled.make({}))
 			expect(yield* Ref.get(fetched)).toEqual(['ABC-7'])
+			expect(yield* Ref.get(posted)).toEqual([{ issueKey: 'ABC-7', markdown: '👀 On it' }])
 			const messages = yield* Ref.get(sent)
 			expect(messages).toHaveLength(1)
 			expect(messages[0]?.name).toBe(mailboxKey)
