@@ -1,5 +1,5 @@
 /**
- * The bot: its provider, callback and event processing settings.
+ * The bot: its providers (GitHub here, Jira from `./JiraBot`), callback and event processing settings.
  * The Worker and the Durable Object both build their half from this one value.
  */
 import { ChannelsCloudflare } from '@humanlayer/channels-alchemy-cloudflare'
@@ -29,6 +29,7 @@ import { Config, Effect, Match, Predicate, Schema } from 'effect'
 
 import { AgentSessions } from './AgentSessionDO'
 import { AgentSessionMessage } from './AgentSessionMessage'
+import { jira } from './JiraBot'
 
 export const maintainerOnlyNotice =
 	'This agent can only be invoked by maintainers (users with write access or higher to this repository).'
@@ -137,7 +138,7 @@ export const githubHandlers = {
 			const message = yield* Schema.encodeEffect(AgentSessionMessage)(
 				AgentSessionMessage.make({
 					prompt: mentionPrompt(event),
-					githubDiscussion: discussion,
+					discussion,
 					deliveryId: context.deliveryId,
 					accessToken: context.accessToken,
 				}),
@@ -171,7 +172,7 @@ const github = GitHubBot.make<HandlerError, HandlerRequirements>({
 
 export const bot = ChannelsCloudflare.make({
 	namespace: 'slop-code-factory',
-	providers: [github],
+	providers: [github, jira],
 	eventProcessing: {
 		concurrency: 1,
 		leaseMs: 10_000,

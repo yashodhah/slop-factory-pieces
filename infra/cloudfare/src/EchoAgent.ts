@@ -9,6 +9,8 @@ import { echoReply } from './EchoReply'
 const RETRY_EVERY = '10 seconds'
 const RETRY_TIMES = 30
 const WORKING = DeliveryActivity.cases.Working.make({ message: 'Working on it' })
+/** Stands in for real agent work so the acknowledgement and the reply are visibly apart; replaced by the real agent later. */
+export const MOCK_WORK_DURATION = '5 seconds'
 
 /**
  * Whether completing may succeed later. The delivery is not found until the callback's `handoff()` has been
@@ -27,6 +29,7 @@ export const answer = Effect.fn('echo_agent.answer')(function* (message: AgentSe
 		Effect.tapError((error) => Effect.logWarning('echo_agent.answer: set_activity failed', error)),
 		Effect.ignore,
 	)
+	yield* Effect.sleep(MOCK_WORK_DURATION)
 	yield* api.complete({ ...targetOf(message), payload: { markdown: echoReply(message.prompt) } }).pipe(
 		Effect.retry({ schedule: Schedule.spaced(RETRY_EVERY), times: RETRY_TIMES, while: isRetryable }),
 		Effect.catchTags({

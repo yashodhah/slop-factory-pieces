@@ -1,12 +1,13 @@
-/** The message the GitHub callback sends an AgentSession, and what the agent reads from it. */
+/** The message the GitHub and Jira callbacks send an AgentSession, and what the agent reads from it. */
 import { DeliveryId } from '@humanlayer/channels-delivery'
 import { GitHubIssue, GitHubPullRequest } from '@humanlayer/channels-github'
+import { JiraIssueRef } from '@humanlayer/channels-jira'
 import { Schema } from 'effect'
 
-/** A message for the AgentSession: the prompt, its GitHub discussion, and the handed-off delivery to finish. */
+/** A message for the AgentSession: the prompt, its GitHub or Jira discussion, and the handed-off delivery to finish. */
 export const AgentSessionMessage = Schema.Struct({
 	prompt: Schema.String,
-	githubDiscussion: Schema.Union([GitHubIssue, GitHubPullRequest]),
+	discussion: Schema.Union([GitHubIssue, GitHubPullRequest, JiraIssueRef]),
 	deliveryId: DeliveryId,
 	accessToken: Schema.RedactedFromValue(Schema.String),
 })

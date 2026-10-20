@@ -165,7 +165,7 @@ describe('onMentioned with write access', () => {
 				expect(sent?.message).toMatchObject({
 					prompt: '@agent why does CI fail?',
 					deliveryId: result.delivery.deliveryId,
-					githubDiscussion: { mailboxKey: fixture.mailboxKey },
+					discussion: { mailboxKey: fixture.mailboxKey },
 				})
 				expect(result.handoffs).toBe(1)
 			}),

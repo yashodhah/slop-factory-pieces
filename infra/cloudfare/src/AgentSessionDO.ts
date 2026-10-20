@@ -7,7 +7,7 @@ import { DeliveryApi } from './DeliveryApi'
 import { answer } from './EchoAgent'
 
 /**
- * The AgentSession namespace; callers address it directly by the GitHub discussion's mailbox key. `send` starts
+ * The AgentSession namespace; callers address it directly by the GitHub or Jira discussion's mailbox key. `send` starts
  * the echo agent in the background and returns once the message is accepted; the agent finishes the delivery.
  * Stage 2 replaces what is behind `send` with Pi.
  */
@@ -33,6 +33,15 @@ export class AgentSessions extends Context.Service<
 	static readonly layer = Layer.effect(this, this.make)
 }
 
+/**
+ * A message must be for this Durable Object: its discussion's mailbox key is the object's name. Anything else
+ * is a routing bug, so the object dies rather than answer the wrong discussion.
+ */
+export const ensureMessageForMailbox = (message: AgentSessionMessage, mailboxKey: string): Effect.Effect<void> =>
+	message.discussion.mailboxKey === mailboxKey
+		? Effect.void
+		: Effect.die(new Error('AgentSession message does not match this Durable Object mailbox key'))
+
 /** Build this object's methods. The Worker entrypoint provides `DeliveryApi`. */
 const AgentSessionImplementation = Effect.gen(function* () {
 	const state = yield* Cloudflare.DurableObjectState
@@ -44,11 +53,7 @@ const AgentSessionImplementation = Effect.gen(function* () {
 		return {
 			send: Effect.fn('agent_session.send')(function* (input: typeof AgentSessionMessage.Encoded) {
 				const message = yield* Schema.decodeEffect(AgentSessionMessage)(input).pipe(Effect.orDie)
-				if (message.githubDiscussion.mailboxKey !== mailboxKey) {
-					return yield* Effect.die(
-						new Error('AgentSession message does not match this Durable Object mailbox key'),
-					)
-				}
+				yield* ensureMessageForMailbox(message, mailboxKey)
 				yield* answer(message).pipe(Effect.provideService(DeliveryApi, api), Effect.forkDetach, Effect.asVoid)
 			}),
 		}
