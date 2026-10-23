@@ -19,7 +19,7 @@ import {
 	type GitHubMentioned,
 	type GitHubRepositoryRef,
 } from '@humanlayer/channels-github'
-import { Config, Effect, Option } from 'effect'
+import { Config, Effect, type Layer, Option } from 'effect'
 
 import { type AgentSessions, decideGitHubMention, gitHubMentionDiscussion } from '@slop/core'
 import { handOff } from './Handoff'
@@ -63,22 +63,37 @@ export const githubHandlers = {
 	},
 } satisfies GitHubCallbackHandlers<HandlerError, HandlerRequirements>
 
-const github = GitHubBot.make<HandlerError, HandlerRequirements>({
-	webhookSecret: Config.Redacted('GITHUB_WEBHOOK_SECRET'),
-	deliveryMode: DebounceDeliveryMode.make({ quietPeriodMs: 3_000, maxWaitMs: 3_000 }),
-	bot: Config.all({
-		mentionNames: Config.String('GITHUB_BOT_MENTION_NAME').pipe(Config.map((name) => [name])),
-		botUserId: Config.schema(GitHubId, 'GITHUB_BOT_USER_ID'),
-	}),
-	handlers: githubHandlers,
-})
+/**
+ * The GitHub provider: webhook secret, debounce, bot identity and handlers from the configuration. The bot uses
+ * `GitHubApiLive`; only tests pass `gitHubApi` to put a fake GitHub behind the same provider.
+ */
+export const makeGitHubProvider = <ApiError = never, ApiRequirements = never>(
+	gitHubApi?: Layer.Layer<GitHubApi, ApiError, ApiRequirements>,
+) =>
+	GitHubBot.make<HandlerError, HandlerRequirements, ApiError, ApiRequirements>({
+		webhookSecret: Config.Redacted('GITHUB_WEBHOOK_SECRET'),
+		deliveryMode: DebounceDeliveryMode.make({ quietPeriodMs: 3_000, maxWaitMs: 3_000 }),
+		bot: Config.all({
+			mentionNames: Config.String('GITHUB_BOT_MENTION_NAME').pipe(Config.map((name) => [name])),
+			botUserId: Config.schema(GitHubId, 'GITHUB_BOT_USER_ID'),
+		}),
+		handlers: githubHandlers,
+		...(gitHubApi === undefined ? {} : { gitHubApi }),
+	})
 
-export const bot = ChannelsCloudflare.make({
+const github = makeGitHubProvider()
+
+/** The bot's namespace and event processing, shared by every host that runs it. */
+export const botSettings = {
 	namespace: 'slop-code-factory',
-	providers: [github, jira],
 	eventProcessing: {
 		concurrency: 1,
 		leaseMs: 10_000,
 		maxAttempts: 5,
 	},
+} as const
+
+export const bot = ChannelsCloudflare.make({
+	...botSettings,
+	providers: [github, jira],
 })
