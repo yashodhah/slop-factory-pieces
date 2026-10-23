@@ -3,12 +3,13 @@
 **Role:** the broker, deployed on Cloudflare: one Worker with GitHub and Jira providers.
 
 **Contains:**
+- Cloudflare wiring only; the cloud-neutral bot logic (mention handling, echo agent, ports, shared behaviour suite) is in `packages/core` (`@slop/core`)
 - Ingress Worker: webhook routes `POST /integrations/github/webhook` and `POST /integrations/jira/webhook`, and the delivery API
 - Mailbox Durable Object (one per GitHub issue or PR, one per Jira issue)
 - `onMentioned` callbacks: GitHub checks access; Jira parses a `/command` (`/research`); both start the AgentSession and `handoff()`
 - AgentSession Durable Object (one per discussion); for now it runs the echo agent
 
-**Access control for Jira is open:** any user who can comment on an issue and mention the bot can start a run. A Jira permission check is deferred by the user (`authorizeJiraMention` in `src/JiraBot.ts` is the hook).
+**Access control for Jira is open:** any user who can comment on an issue and mention the bot can start a run. A Jira permission check is deferred by the user (`authorizeJiraMention` in `packages/core/src/JiraMention.ts` is the hook).
 
 **Uses:** `@humanlayer/channels-delivery`, `-github`, `-alchemy-cloudflare` (published 0.1.0) and `-jira` (vendored tarball, see below).
 
@@ -34,7 +35,7 @@ Set these in `.env` (never committed; see `.env.example` for the names). The Wor
 ## What a `/research` mention does on Jira
 
 1. Acknowledge: right after the mention is authorized and its command recognised, the bot comments `👀 On it` on the issue (no mention). This is best effort: if posting fails or takes over 5 seconds, a warning is logged and the run continues. Ignored mentions (no command, unknown command, denied) get no acknowledgement.
-2. Work: the AgentSession runs the echo agent, which sets `Working` and then waits `MOCK_WORK_DURATION` (5 seconds, in `src/EchoAgent.ts`). The wait stands in for real agent work and goes away when the real agent replaces the echo agent. It applies to GitHub too.
+2. Work: the AgentSession runs the echo agent, which sets `Working` and then waits `MOCK_WORK_DURATION` (5 seconds, in `packages/core/src/EchoAgent.ts`). The wait stands in for real agent work and goes away when the real agent replaces the echo agent. It applies to GitHub too.
 3. Reply: the echo reply is posted as a new comment that starts with an @-mention of the person who asked. The mention comes from the signed webhook's comment author, saved with the delivery; it is never parsed from text, and the reply's text (which quotes the issue) is posted as plain text only.
 
 Jira Cloud's REST API has no comment reactions and no comment threads, so the 👀 reaction and the threaded reply are emulated: the reaction by a separate comment, the reply by a mention of the requester. The bot's own comments (the acknowledgement and the reply) are authored by the bot account and ignored, so they never start another run.
@@ -44,8 +45,14 @@ Jira Cloud's REST API has no comment reactions and no comment threads, so the �
 `@humanlayer/channels-jira` is installed from a tarball in `vendor/`. To update it:
 
 1. In the SDK checkout, `cd packages/jira && bun pm pack`.
-2. Rename the `.tgz` to include the SDK short commit hash, e.g. `humanlayer-channels-jira-0.0.0-85830e9.tgz` (current file in `vendor/`). Always use a fresh filename: bun caches `file:` tarballs by name and would otherwise reuse a stale entry. Move it into `vendor/`, delete the old one, and point `@humanlayer/channels-jira` in `package.json` at `file:./vendor/<new-file>.tgz`.
-3. `bun install`, then `bun run test` and `bun run typecheck`.
+2. Rename the `.tgz` to include the SDK short commit hash, e.g. `humanlayer-channels-jira-0.0.0-85830e9.tgz` (current file in `vendor/`). Always use a fresh filename: bun caches `file:` tarballs by name and would otherwise reuse a stale entry. Move it into `vendor/`, delete the old one, and point `@humanlayer/channels-jira` in both `packages/core/package.json` and `infra/cloudfare/package.json` at `file:../../infra/cloudfare/vendor/<new-file>.tgz`.
+3. Run `bun install` from the repo root, then `bun run test` and `bun run typecheck` from either package.
+
+Install layout: `packages/core` and `infra/cloudfare` are bun workspaces. Install with `bun install` from the repo root; both packages share one install and one lockfile (`bun.lock` at the root), then run `bun run test` / `bun run typecheck` from either package directory.
+
+The `file:../../infra/cloudfare/vendor/...` Jira spec in both `package.json` files must stay byte-identical, otherwise bun installs the tarball twice and breaks Effect identity. The root `package-lock.json` belongs to the unrelated copilot-sdk example and is not used by the workspaces.
+
+`infra/cloudfare` depends on `@slop/core` as `"*"` (and `packages/core` has `"version": "0.0.0"`), not `workspace:*`: bun and npm both resolve that range to the local workspace (bun symlinks `node_modules/@slop/core` to `packages/core`), while npm rejects the `workspace:` protocol, which would break `npm install` at the root for the copilot-sdk example. Do not use `file:../../packages/core` either: bun copies a `file:` directory instead of linking it.
 
 ## Running locally
 

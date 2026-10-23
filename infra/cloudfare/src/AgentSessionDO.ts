@@ -1,10 +1,8 @@
 import * as Cloudflare from 'alchemy/Cloudflare'
-import type { RuntimeContext } from 'alchemy/RuntimeContext'
-import { Context, Effect, Layer, Schema } from 'effect'
+import { RuntimeContext } from 'alchemy/RuntimeContext'
+import { Effect, Layer, Schema } from 'effect'
 
-import { AgentSessionMessage } from './AgentSessionMessage'
-import { DeliveryApi } from './DeliveryApi'
-import { answer } from './EchoAgent'
+import { AgentSessionMessage, AgentSessions, answer, DeliveryApi } from '@slop/core'
 
 /**
  * The AgentSession namespace; callers address it directly by the GitHub or Jira discussion's mailbox key. `send` starts
@@ -18,20 +16,27 @@ export class AgentSession extends Cloudflare.DurableObject<
 	}
 >()('AgentSession') {}
 
-/** The AgentSession namespace as a service, as `DeliveryMailboxes` is for mailboxes. */
-export class AgentSessions extends Context.Service<
+/**
+ * Fills the core `AgentSessions` port with the AgentSession namespace, so callers see `Effect<void>`.
+ *
+ * The stub's `send` is `RuntimeContext`-coloured only because it shares its type with the object's own method:
+ * Alchemy's stub calls the Durable Object through its Cloudflare binding and never reads `RuntimeContext`. A
+ * Worker's layers cannot require it either, so it is discharged with `RuntimeContext.phantom`, as Alchemy does for
+ * the `RuntimeContext`-coloured calls its own services wrap. Every call still runs inside a Worker or Durable Object
+ * event, where Alchemy provides the real context.
+ */
+export const AgentSessionsCloudflare = Layer.effect(
 	AgentSessions,
-	{
-		readonly getByName: (mailboxKey: string) => {
-			readonly send: (input: typeof AgentSessionMessage.Encoded) => Effect.Effect<void, never, RuntimeContext>
-		}
-	}
->()('slop-code-factory/AgentSessions', {
-	/** The namespace of {@link AgentSession}. */
-	make: AgentSession,
-}) {
-	static readonly layer = Layer.effect(this, this.make)
-}
+	Effect.gen(function* () {
+		const namespace = yield* AgentSession
+		return AgentSessions.of({
+			getByName: (mailboxKey) => {
+				const session = namespace.getByName(mailboxKey)
+				return { send: (input) => session.send(input).pipe(Effect.provide(RuntimeContext.phantom)) }
+			},
+		})
+	}),
+)
 
 /**
  * A message must be for this Durable Object: its discussion's mailbox key is the object's name. Anything else

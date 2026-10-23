@@ -9,8 +9,8 @@ Notes from a discussion on 2026-10-23. Nothing here is built. This is separate f
 
 ## Today
 
-- GitHub: the mention author's access on the repo is read from GitHub. `write` or higher is required (`GithubBot.ts`, `respondToMentionAccess`). Denied: a 👎 reaction and one "maintainers only" comment.
-- Jira: no check. `authorizeJiraMention` in `JiraBot.ts` returns `true`. The README says a Jira permission check is deferred.
+- GitHub: the mention author's access on the repo is read from GitHub. `write` or higher is required (`respondToMentionAccess` in `packages/core/src/GithubMention.ts`). Denied: a 👎 reaction and one "maintainers only" comment.
+- Jira: no check. `authorizeJiraMention` in `packages/core/src/JiraMention.ts` returns `true`. The README says a Jira permission check is deferred.
 - The signature check (is the message really from the provider) is separate. It is library code and platform-independent.
 
 ## Two gates, two owners **(guess)**

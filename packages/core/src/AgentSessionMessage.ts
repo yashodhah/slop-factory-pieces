@@ -13,6 +13,12 @@ export const AgentSessionMessage = Schema.Struct({
 })
 export type AgentSessionMessage = typeof AgentSessionMessage.Type
 
+/** What a mention decided to ask the agent, before a cloud hands the delivery off: the message minus the delivery. */
+export type MentionRequest = {
+	readonly prompt: string
+	readonly discussion: AgentSessionMessage['discussion']
+}
+
 /** The delivery API's target for the message's delivery: its ID and access token. */
 export const targetOf = (message: AgentSessionMessage) => ({
 	deliveryId: message.deliveryId,

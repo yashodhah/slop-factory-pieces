@@ -99,7 +99,7 @@ GitHub -> API Gateway -> Receiver Lambda -> Starter Lambda -> durable execution
 - The execution is started asynchronously (sync is capped at 15 minutes). Its name is `hash(namespace|provider|eventId)`, which makes duplicate starts idempotent.
 - The 3 s debounce is `context.wait`. Cloudflare's current setting is `Debounce {quietPeriodMs: 3000, maxWaitMs: 3000}`.
 - The echo callback and the reply post are separate steps so a provider outage retries only the post (req 28).
-- The agent's `/complete` and `/fail` on the delivery API call `SendDurableExecutionCallbackSuccess` or `Failure` with a callback id stored in DynamoDB. The callback timeout is 10 minutes, matching the bot's hand-off `failAfter` (`HANDOFF_FAIL_AFTER = '10 minutes'` in `GithubBot.ts` and `JiraBot.ts`). The SDK's own default is 24 hours; the bot overrides it. An earlier draft of this document and doc 04 said 24 hours.
+- The agent's `/complete` and `/fail` on the delivery API call `SendDurableExecutionCallbackSuccess` or `Failure` with a callback id stored in DynamoDB. The callback timeout is 10 minutes, matching the bot's hand-off `failAfter` (`HANDOFF_FAIL_AFTER = '10 minutes'` in `infra/cloudfare/src/Handoff.ts`). The SDK's own default is 24 hours; the bot overrides it. An earlier draft of this document and doc 04 said 24 hours.
 - Pin the function to a numbered version or alias, never `$LATEST`. Attach a dead-letter queue.
 
 ### DynamoDB (shape is a guess)
