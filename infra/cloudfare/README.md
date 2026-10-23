@@ -51,6 +51,8 @@ Install layout: `packages/core` and `infra/cloudfare` are bun workspaces. Instal
 
 The `file:../../infra/cloudfare/vendor/...` Jira spec in both `package.json` files must stay byte-identical, otherwise bun installs the tarball twice and breaks Effect identity. The root `package-lock.json` belongs to the unrelated copilot-sdk example and is not used by the workspaces.
 
+`infra/cloudfare` depends on `@slop/core` as `"*"` (and `packages/core` has `"version": "0.0.0"`), not `workspace:*`: bun and npm both resolve that range to the local workspace (bun symlinks `node_modules/@slop/core` to `packages/core`), while npm rejects the `workspace:` protocol, which would break `npm install` at the root for the copilot-sdk example. Do not use `file:../../packages/core` either: bun copies a `file:` directory instead of linking it.
+
 ## Running locally
 
 Not verified locally. `alchemy.run.ts` uses `Cloudflare.providers()` and `Cloudflare.state()`, so `alchemy dev` needs Cloudflare credentials and touches a Cloudflare account; no fully local, side-effect-free mode was used. Coverage comes from the tests (`bun run test`): `test/jira-seam.vi.test.ts` sends a signed fixture through the provider built from the `JIRA_*` configuration and the SDK's event processor into the real Jira handlers (Jira API and AgentSession faked), and `test/jira-bot.vi.test.ts` covers the handlers.

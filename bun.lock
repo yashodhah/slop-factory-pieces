@@ -17,7 +17,7 @@
         "@humanlayer/channels-delivery": "0.1.0",
         "@humanlayer/channels-github": "0.1.0",
         "@humanlayer/channels-jira": "file:../../infra/cloudfare/vendor/humanlayer-channels-jira-0.0.0-85830e9.tgz",
-        "@slop/core": "workspace:*",
+        "@slop/core": "*",
         "alchemy": "2.0.0-beta.83",
         "effect": "4.0.0",
       },
@@ -31,6 +31,7 @@
     },
     "packages/core": {
       "name": "@slop/core",
+      "version": "0.0.0",
       "dependencies": {
         "@humanlayer/channels-delivery": "0.1.0",
         "@humanlayer/channels-github": "0.1.0",
