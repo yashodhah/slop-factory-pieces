@@ -11,6 +11,8 @@ These notes capture a discussion about `effect-channels` and how to use it for a
 | [05-state-and-memory](05-state-and-memory.md) | Who remembers what; worked example with two turns and a stop |
 | [06-starter-design-notes](06-starter-design-notes.md) | Findings from Pi and the SDK example, working guesses, open questions |
 | [07-roadmap](07-roadmap.md) | Cloudflare first, then Azure and AWS, different sandbox strategies |
+| [08-aws-control-layer](08-aws-control-layer.md) | The control layer on AWS: what Durable Objects and Workers provide, what is Cloudflare-specific, proposed AWS shape, open decision |
+| [09-identity-and-authorization](09-identity-and-authorization.md) | Entra identity, who may trigger the bot, keeping the bot within the caller's permissions |
 
 ## Source material
 
