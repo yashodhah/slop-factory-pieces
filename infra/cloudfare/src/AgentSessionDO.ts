@@ -2,8 +2,7 @@ import * as Cloudflare from 'alchemy/Cloudflare'
 import { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Effect, Layer, Schema } from 'effect'
 
-import { AgentSessionMessage, AgentSessions, DeliveryApi } from '@slop/core'
-import { answer } from './EchoAgent'
+import { AgentSessionMessage, AgentSessions, answer, DeliveryApi } from '@slop/core'
 
 /**
  * The AgentSession namespace; callers address it directly by the GitHub or Jira discussion's mailbox key. `send` starts

@@ -10,9 +10,9 @@ import { GitHubId, GitHubIssue, GitHubIssueRef } from '@humanlayer/channels-gith
 import { Effect, Fiber, Layer, Redacted, Ref } from 'effect'
 import { TestClock } from 'effect/testing'
 
-import { AgentSessionMessage } from '@slop/core'
-import { DeliveryApi } from '../src/DeliveryApi'
+import { AgentSessionMessage } from '../src/AgentSessionMessage'
 import { answer, MOCK_WORK_DURATION } from '../src/EchoAgent'
+import { DeliveryApi } from '../src/Ports'
 
 const message = AgentSessionMessage.make({
 	prompt: 'why does CI fail?',
