@@ -2,6 +2,11 @@
  * What the shared behaviour suite (`./suite.ts`) needs from a deployment of the control layer. Each cloud writes
  * one driver: Cloudflare's runs the real bot over the SDK's in-memory store, AWS's will run it over its own.
  * Nothing here names a cloud or the SDK's wiring; only Effect and plain values.
+ *
+ * Time: the suite runs every behaviour with `it.effect`, so under Effect's test clock. `advance` is the only source
+ * of time; nothing in the suite waits on a real clock. A driver whose deployment really waits (an AWS driver over
+ * real queues, timers or durable waits, for example) needs a live-clock option before it can run the suite, and
+ * `advance` must then mean real elapsed time.
  */
 import type { Effect } from 'effect'
 
@@ -49,13 +54,26 @@ export interface ControlLayerDriver {
 	readonly completeDelivery: (deliveryId: string) => Effect.Effect<void>
 	/**
 	 * What the bot showed on GitHub so far, oldest first: each reaction it added (`eyes`, `-1`, ...) and the
-	 * Markdown of each comment it posted.
+	 * Markdown of each comment it posted. `failedCommentPosts` is how many comment post attempts failed because of
+	 * `failNextCommentPosts`; failed attempts are not in `comments`.
 	 */
-	readonly output: Effect.Effect<{ reactions: ReadonlyArray<string>; comments: ReadonlyArray<string> }>
-	/** Make the next `count` comment posts fail with a retryable GitHub error. */
+	readonly output: Effect.Effect<{
+		reactions: ReadonlyArray<string>
+		comments: ReadonlyArray<string>
+		failedCommentPosts: number
+	}>
+	/**
+	 * Make the next `count` comment posts fail with a retryable GitHub error. The driver must count each failure it
+	 * actually returned to the bot in `output.failedCommentPosts`, not the number it was asked for, so the suite can
+	 * tell that the failures happened and were retried.
+	 */
 	readonly failNextCommentPosts: (count: number) => Effect.Effect<void>
 	/** The access `login` has to the repository. Authors not set have `write`. */
 	readonly setAuthorAccess: (login: string, access: 'none' | 'read' | 'write') => Effect.Effect<void>
-	/** Stop mailbox processing and start it again over the same saved mailboxes. */
+	/**
+	 * Stop mailbox processing and start it again over the same saved mailboxes, the way the deployment comes back
+	 * after a crash or redeploy. Everything processing held in memory (timers, fibers, caches, queued work) must be
+	 * gone; only what the deployment saved survives. A driver must not fake this by leaving processing running.
+	 */
 	readonly restart: Effect.Effect<void>
 }

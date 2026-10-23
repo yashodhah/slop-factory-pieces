@@ -21,6 +21,11 @@ const HANDOFF_TIMEOUT_MS = 10 * 60 * 1_000
 const RETRY_WINDOW_MS = 5 * 60 * 1_000
 
 const maintainer = 'maintainer-1'
+/**
+ * B12's pull request. Issues and pull requests share one number sequence in a repository, so it must not be the
+ * number of B12's issue (12). Exported so a driver's own tests can check the mailbox key it gets.
+ */
+export const B12_PULL_REQUEST = 120
 
 const behaviours = {
 	B1: 'B1 The same webhook posted twice while running gives one agent start (req 26)',
@@ -163,7 +168,9 @@ const scenarios: Record<BehaviourId, (driver: ControlLayerDriver) => Effect.Effe
 			yield* driver.failNextCommentPosts(2)
 			yield* driver.completeDelivery(start.deliveryId)
 			yield* driver.advance(RETRY_WINDOW_MS)
-			expect((yield* driver.output).comments).toEqual([echoReply(`${botMention} ${body}`)])
+			const output = yield* driver.output
+			expect(output.failedCommentPosts, 'both injected comment post failures must have been hit').toBe(2)
+			expect(output.comments).toEqual([echoReply(`${botMention} ${body}`)])
 			expect(yield* driver.agentStarts).toHaveLength(1)
 		}),
 
@@ -203,7 +210,7 @@ const scenarios: Record<BehaviourId, (driver: ControlLayerDriver) => Effect.Effe
 			const { status } = yield* driver.postGitHubMention(mention('b9-event', 9, 'forged', { signature: 'invalid' }))
 			expect(status).toBeGreaterThanOrEqual(400)
 			yield* driver.advance(PAST_DEBOUNCE_MS + OUTPUT_MS)
-			expect(yield* driver.output).toEqual({ reactions: [], comments: [] })
+			expect(yield* driver.output).toEqual({ reactions: [], comments: [], failedCommentPosts: 0 })
 			expect(yield* driver.agentStarts).toEqual([])
 		}),
 
@@ -233,13 +240,13 @@ const scenarios: Record<BehaviourId, (driver: ControlLayerDriver) => Effect.Effe
 	B12: (driver) =>
 		Effect.gen(function* () {
 			const body = 'review this pull request'
-			yield* post(driver, mention('b12-pr', 12, body, { kind: 'pr' }))
+			yield* post(driver, mention('b12-pr', B12_PULL_REQUEST, body, { kind: 'pr' }))
 			yield* driver.advance(PAST_DEBOUNCE_MS)
 			const start = yield* onlyStart(driver)
 			expect(start.prompt).toBe(`${botMention} ${body}`)
 			expect((yield* driver.output).reactions).toEqual(['eyes'])
 
-			/** Issue 12 is another discussion than pull request 12: it starts while the pull request is busy. */
+			/** An issue is another discussion than the pull request: it starts while the pull request is busy. */
 			yield* post(driver, mention('b12-issue', 12, 'and this issue'))
 			yield* driver.advance(PAST_DEBOUNCE_MS)
 			const starts = yield* driver.agentStarts

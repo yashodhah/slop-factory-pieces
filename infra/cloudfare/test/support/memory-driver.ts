@@ -75,6 +75,8 @@ interface Recorded {
 	readonly reactions: ReadonlyArray<GitHubReactionRequest>
 	readonly comments: ReadonlyArray<GitHubIssueComment>
 	readonly failCommentPosts: number
+	/** Comment post attempts that `failCommentPosts` actually failed. */
+	readonly failedCommentPosts: number
 	readonly access: ReadonlyMap<string, GitHubAccessLevel>
 	readonly starts: ReadonlyArray<AgentStart & { readonly accessToken: string }>
 }
@@ -86,6 +88,7 @@ export const makeMemoryDriver: Effect.Effect<ControlLayerDriver, never, Scope.Sc
 		reactions: [],
 		comments: [],
 		failCommentPosts: 0,
+		failedCommentPosts: 0,
 		access: new Map(),
 		starts: [],
 	})
@@ -99,7 +102,14 @@ export const makeMemoryDriver: Effect.Effect<ControlLayerDriver, never, Scope.Sc
 					retryable: true,
 					status: 503,
 				})
-				return [Effect.fail(error), { ...current, failCommentPosts: current.failCommentPosts - 1 }]
+				return [
+					Effect.fail(error),
+					{
+						...current,
+						failCommentPosts: current.failCommentPosts - 1,
+						failedCommentPosts: current.failedCommentPosts + 1,
+					},
+				]
 			}
 			const comment = GitHubIssueComment.make({
 				ref: { discussion, id: GitHubId.make(900_000 + current.comments.length) },
@@ -301,6 +311,7 @@ export const makeMemoryDriver: Effect.Effect<ControlLayerDriver, never, Scope.Sc
 			Effect.map((current) => ({
 				reactions: current.reactions.map((request) => request.reaction),
 				comments: current.comments.map((comment) => comment.body),
+				failedCommentPosts: current.failedCommentPosts,
 			})),
 		),
 		failNextCommentPosts: (count) => Ref.update(recorded, (current) => ({ ...current, failCommentPosts: count })),
