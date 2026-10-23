@@ -44,8 +44,12 @@ Jira Cloud's REST API has no comment reactions and no comment threads, so the ðŸ
 `@humanlayer/channels-jira` is installed from a tarball in `vendor/`. To update it:
 
 1. In the SDK checkout, `cd packages/jira && bun pm pack`.
-2. Rename the `.tgz` to include the SDK short commit hash, e.g. `humanlayer-channels-jira-0.0.0-85830e9.tgz` (current file in `vendor/`). Always use a fresh filename: bun caches `file:` tarballs by name and would otherwise reuse a stale entry. Move it into `vendor/`, delete the old one, and point `@humanlayer/channels-jira` in `package.json` at `file:./vendor/<new-file>.tgz`.
-3. `bun install`, then `bun run test` and `bun run typecheck`.
+2. Rename the `.tgz` to include the SDK short commit hash, e.g. `humanlayer-channels-jira-0.0.0-85830e9.tgz` (current file in `vendor/`). Always use a fresh filename: bun caches `file:` tarballs by name and would otherwise reuse a stale entry. Move it into `vendor/`, delete the old one, and point `@humanlayer/channels-jira` in both `packages/core/package.json` and `infra/cloudfare/package.json` at `file:../../infra/cloudfare/vendor/<new-file>.tgz`.
+3. Run `bun install` from the repo root, then `bun run test` and `bun run typecheck` from either package.
+
+Install layout: `packages/core` and `infra/cloudfare` are bun workspaces. Install with `bun install` from the repo root; both packages share one install and one lockfile (`bun.lock` at the root), then run `bun run test` / `bun run typecheck` from either package directory.
+
+The `file:../../infra/cloudfare/vendor/...` Jira spec in both `package.json` files must stay byte-identical, otherwise bun installs the tarball twice and breaks Effect identity. The root `package-lock.json` belongs to the unrelated copilot-sdk example and is not used by the workspaces.
 
 ## Running locally
 
