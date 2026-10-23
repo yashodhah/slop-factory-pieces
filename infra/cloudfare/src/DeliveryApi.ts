@@ -30,9 +30,6 @@ const selfBindingHttpClient = Layer.effect(
 	}),
 )
 
-/** The core `DeliveryApi` port, re-exported for the Cloudflare code that reports through it. */
-export { DeliveryApi }
-
 /** Fills the core `DeliveryApi` port with the client over the Ingress Worker's self service binding. */
 export const DeliveryApiCloudflare = Layer.effect(DeliveryApi, makeDeliveryClient({ baseUrl: BINDING_BASE_URL })).pipe(
 	Layer.provide(selfBindingHttpClient),

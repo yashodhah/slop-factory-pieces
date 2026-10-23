@@ -140,7 +140,8 @@ const runOnMentioned = (
 					Ref.update(recorded, (current) => ({ ...current, subscribed: [...current.subscribed, mailboxKey] })).pipe(
 						Effect.as(MailboxSubscriptionCreatedResult.make({})),
 					),
-			}),		)
+			}),
+		)
 		for (const fixture of fixtures) {
 			yield* githubHandlers.onMentioned(fixture.event, delivery.context).pipe(Effect.provide(layer))
 		}

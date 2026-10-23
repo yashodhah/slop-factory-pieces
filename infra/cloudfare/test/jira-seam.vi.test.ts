@@ -104,7 +104,8 @@ describe('Jira seam: signed webhook -> provider -> event processor -> jiraHandle
 								Ref.update(sent, (all) => [...all, { name, message }]),
 						}),
 					}),
-				),			)
+				),
+			)
 
 			const result = yield* processor.process([admission], execution).pipe(Effect.provide(fakes))
 

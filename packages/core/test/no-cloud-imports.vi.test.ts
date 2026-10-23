@@ -5,7 +5,15 @@ import { describe, expect, it } from '@effect/vitest'
 
 const srcDir = join(import.meta.dirname, '..', 'src')
 
-const forbiddenPrefixes = ['alchemy', '@cloudflare/', '@aws-sdk/', '@humanlayer/channels-alchemy-cloudflare']
+const forbiddenPrefixes = [
+	'alchemy',
+	'cloudflare:',
+	'@cloudflare/',
+	'@aws-sdk/',
+	'@aws/',
+	'aws-lambda',
+	'@humanlayer/channels-alchemy-cloudflare',
+]
 
 /** Module specifiers named by `import ... from '...'`, `export ... from '...'`, `import('...')` and bare `import '...'`. */
 const importPaths = (source: string): string[] =>

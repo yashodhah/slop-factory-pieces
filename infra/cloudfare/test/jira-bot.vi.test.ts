@@ -82,7 +82,8 @@ const runOnMentioned = (
 							})),
 					}),
 				}),
-			),		)
+			),
+		)
 		const handlers = options.handlers ?? jiraHandlers
 		yield* handlers.onMentioned(event, delivery.context).pipe(Effect.provide(layer))
 		return {
