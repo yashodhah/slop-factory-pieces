@@ -28,7 +28,7 @@ import type { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Config, Effect, Match, Predicate, Schema } from 'effect'
 
 import { AgentSessions } from './AgentSessionDO'
-import { AgentSessionMessage } from './AgentSessionMessage'
+import { AgentSessionMessage } from '@slop/core'
 import { jira } from './JiraBot'
 
 export const maintainerOnlyNotice =

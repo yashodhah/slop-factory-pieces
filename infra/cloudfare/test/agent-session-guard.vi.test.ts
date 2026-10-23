@@ -4,7 +4,7 @@ import { JiraIssueId, JiraIssueRef } from '@humanlayer/channels-jira'
 import { Effect, Exit, Redacted } from 'effect'
 
 import { ensureMessageForMailbox } from '../src/AgentSessionDO'
-import { AgentSessionMessage } from '../src/AgentSessionMessage'
+import { AgentSessionMessage } from '@slop/core'
 
 /** The Durable Object's own guard; the object itself needs the Workers runtime, so the guard is tested alone. */
 const jiraMessage = (mailboxKey: string) =>

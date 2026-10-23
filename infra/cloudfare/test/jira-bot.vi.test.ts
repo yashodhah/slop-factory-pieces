@@ -4,7 +4,7 @@ import { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Effect, Fiber, Layer, Redacted, Ref } from 'effect'
 import { TestClock } from 'effect/testing'
 
-import type { AgentSessionMessage } from '../src/AgentSessionMessage'
+import type { AgentSessionMessage } from '@slop/core'
 import { AgentSessions } from '../src/AgentSessionDO'
 import { jiraHandlers, makeJiraHandlers } from '../src/JiraBot'
 import { makeFakeDeliveryContext } from './support/delivery-context'

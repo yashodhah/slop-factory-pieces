@@ -2,9 +2,8 @@
 import { DeliveryActivity } from '@humanlayer/channels-delivery'
 import { Effect, Predicate, Schedule } from 'effect'
 
-import { type AgentSessionMessage, targetOf } from './AgentSessionMessage'
+import { type AgentSessionMessage, echoReply, targetOf } from '@slop/core'
 import { DeliveryApi } from './DeliveryApi'
-import { echoReply } from './EchoReply'
 
 const RETRY_EVERY = '10 seconds'
 const RETRY_TIMES = 30

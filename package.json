@@ -12,5 +12,22 @@
   "type": "module",
   "dependencies": {
     "@github/copilot-sdk": "^1.0.21"
+  },
+  "workspaces": [
+    "packages/core",
+    "infra/cloudfare"
+  ],
+  "overrides": {
+    "@humanlayer/channels-delivery": "0.1.0",
+    "@effect/opentelemetry": "4.0.0",
+    "@effect/platform-browser": "4.0.0",
+    "@effect/platform-bun": "4.0.0",
+    "@effect/platform-node": "4.0.0",
+    "@effect/platform-node-shared": "4.0.0",
+    "@effect/sql-d1": "4.0.0",
+    "@effect/sql-pg": "4.0.0",
+    "@effect/sql-sqlite-do": "4.0.0",
+    "@effect/vitest": "4.0.0",
+    "effect": "4.0.0"
   }
 }

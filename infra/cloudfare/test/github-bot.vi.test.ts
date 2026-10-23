@@ -25,7 +25,7 @@ import {
 import { RuntimeContext } from 'alchemy/RuntimeContext'
 import { ConfigProvider, Effect, Layer, Ref } from 'effect'
 
-import type { AgentSessionMessage } from '../src/AgentSessionMessage'
+import type { AgentSessionMessage } from '@slop/core'
 import { AgentSessions } from '../src/AgentSessionDO'
 import { githubHandlers, maintainerOnlyNotice, mentionPrompt } from '../src/GithubBot'
 import { makeFakeDeliveryContext } from './support/delivery-context'

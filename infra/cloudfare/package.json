@@ -15,7 +15,8 @@
 		"@humanlayer/channels-alchemy-cloudflare": "0.1.0",
 		"@humanlayer/channels-delivery": "0.1.0",
 		"@humanlayer/channels-github": "0.1.0",
-		"@humanlayer/channels-jira": "file:./vendor/humanlayer-channels-jira-0.0.0-85830e9.tgz",
+		"@humanlayer/channels-jira": "file:../../infra/cloudfare/vendor/humanlayer-channels-jira-0.0.0-85830e9.tgz",
+		"@slop/core": "workspace:*",
 		"alchemy": "2.0.0-beta.83",
 		"effect": "4.0.0"
 	},
@@ -25,18 +26,5 @@
 		"@types/bun": "^1.3.10",
 		"typescript": "7.0.2",
 		"vitest": "5.0.1"
-	},
-	"overrides": {
-		"@humanlayer/channels-delivery": "0.1.0",
-		"@effect/opentelemetry": "4.0.0",
-		"@effect/platform-browser": "4.0.0",
-		"@effect/platform-bun": "4.0.0",
-		"@effect/platform-node": "4.0.0",
-		"@effect/platform-node-shared": "4.0.0",
-		"@effect/sql-d1": "4.0.0",
-		"@effect/sql-pg": "4.0.0",
-		"@effect/sql-sqlite-do": "4.0.0",
-		"@effect/vitest": "4.0.0",
-		"effect": "4.0.0"
 	}
 }

@@ -20,8 +20,7 @@ import type { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Config, Effect, Option, Predicate, Schema } from 'effect'
 
 import { AgentSessions } from './AgentSessionDO'
-import { AgentSessionMessage } from './AgentSessionMessage'
-import { parseCommand } from './JiraCommand'
+import { AgentSessionMessage, parseCommand } from '@slop/core'
 
 /**
  * Whether the mention's author may invoke the bot. Access control is deferred: anyone who can comment on the

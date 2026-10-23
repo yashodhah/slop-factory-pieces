@@ -2,7 +2,7 @@ import * as Cloudflare from 'alchemy/Cloudflare'
 import type { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Context, Effect, Layer, Schema } from 'effect'
 
-import { AgentSessionMessage } from './AgentSessionMessage'
+import { AgentSessionMessage } from '@slop/core'
 import { DeliveryApi } from './DeliveryApi'
 import { answer } from './EchoAgent'
 

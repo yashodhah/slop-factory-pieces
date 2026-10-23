@@ -10,7 +10,7 @@ import { GitHubId, GitHubIssue, GitHubIssueRef } from '@humanlayer/channels-gith
 import { Effect, Fiber, Layer, Redacted, Ref } from 'effect'
 import { TestClock } from 'effect/testing'
 
-import { AgentSessionMessage } from '../src/AgentSessionMessage'
+import { AgentSessionMessage } from '@slop/core'
 import { DeliveryApi } from '../src/DeliveryApi'
 import { answer, MOCK_WORK_DURATION } from '../src/EchoAgent'
 

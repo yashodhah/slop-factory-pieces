@@ -22,7 +22,7 @@ import { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Config, ConfigProvider, Effect, Layer, Option, Ref } from 'effect'
 import { Headers } from 'effect/http'
 
-import type { AgentSessionMessage } from '../src/AgentSessionMessage'
+import type { AgentSessionMessage } from '@slop/core'
 import { AgentSessions } from '../src/AgentSessionDO'
 import { jira, jiraHandlers } from '../src/JiraBot'
 import { makeFakeDeliveryContext } from './support/delivery-context'
