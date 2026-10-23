@@ -80,7 +80,13 @@ const scenarios: Record<BehaviourId, (driver: ControlLayerDriver) => Effect.Effe
 			yield* driver.advance(PAST_DEBOUNCE_MS)
 			yield* post(driver, mention('b1-event', 1, 'run the tests'))
 			yield* driver.advance(PAST_DEBOUNCE_MS)
-			yield* onlyStart(driver)
+			const start = yield* onlyStart(driver)
+
+			/** A duplicate queued behind the running delivery would start once it completes. */
+			yield* driver.completeDelivery(start.deliveryId)
+			yield* driver.advance(PAST_DEBOUNCE_MS + OUTPUT_MS)
+			expect(yield* driver.agentStarts, 'a redelivered webhook must not start the agent again').toHaveLength(1)
+			expect((yield* driver.output).comments).toEqual([echoReply(`${botMention} run the tests`)])
 		}),
 
 	B2: (driver) =>
@@ -105,7 +111,13 @@ const scenarios: Record<BehaviourId, (driver: ControlLayerDriver) => Effect.Effe
 			yield* driver.advance(1_000)
 			yield* post(driver, mention('b3-second', 3, 'second thought'))
 			yield* driver.advance(PAST_DEBOUNCE_MS)
-			yield* onlyStart(driver)
+			const start = yield* onlyStart(driver)
+
+			/** Merged into one run, not queued behind it: nothing is left to start once the run completes. */
+			yield* driver.completeDelivery(start.deliveryId)
+			yield* driver.advance(PAST_DEBOUNCE_MS + OUTPUT_MS)
+			expect(yield* driver.agentStarts, 'both mentions must have gone into the one run').toHaveLength(1)
+			expect((yield* driver.output).comments).toEqual([echoReply(start.prompt)])
 		}),
 
 	B4: (driver) =>
