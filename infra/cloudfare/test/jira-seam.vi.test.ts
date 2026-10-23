@@ -18,12 +18,10 @@ import {
 	type ProviderWebhookOutcome,
 } from '@humanlayer/channels-delivery'
 import { JiraAccountId, JiraApi, makeJiraEventProcessor } from '@humanlayer/channels-jira'
-import { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Config, ConfigProvider, Effect, Layer, Option, Ref } from 'effect'
 import { Headers } from 'effect/http'
 
-import type { AgentSessionMessage } from '@slop/core'
-import { AgentSessions } from '../src/AgentSessionDO'
+import { type AgentSessionMessage, AgentSessions } from '@slop/core'
 import { jira, jiraHandlers } from '../src/JiraBot'
 import { makeFakeDeliveryContext } from './support/delivery-context'
 
@@ -106,9 +104,7 @@ describe('Jira seam: signed webhook -> provider -> event processor -> jiraHandle
 								Ref.update(sent, (all) => [...all, { name, message }]),
 						}),
 					}),
-				),
-				Layer.mock(RuntimeContext, { Type: 'Worker', id: 'jira-seam-test', env: {} }),
-			)
+				),			)
 
 			const result = yield* processor.process([admission], execution).pipe(Effect.provide(fakes))
 

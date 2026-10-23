@@ -16,11 +16,9 @@ import {
 	type JiraIssueInfo,
 	type JiraMentioned,
 } from '@humanlayer/channels-jira'
-import type { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Config, Effect, Option, Predicate, Schema } from 'effect'
 
-import { AgentSessions } from './AgentSessionDO'
-import { AgentSessionMessage, parseCommand } from '@slop/core'
+import { AgentSessionMessage, AgentSessions, parseCommand } from '@slop/core'
 
 /**
  * Whether the mention's author may invoke the bot. Access control is deferred: anyone who can comment on the
@@ -50,7 +48,7 @@ const ACK_TIMEOUT = '5 seconds'
 export const JIRA_ACK_MARKDOWN = '👀 On it'
 
 type HandlerError = DeliveryHandoffError
-type HandlerRequirements = JiraApi | RuntimeContext | AgentSessions
+type HandlerRequirements = JiraApi | AgentSessions
 
 /** Builds the Jira callbacks; `authorize` is the access policy, swappable in tests. */
 export const makeJiraHandlers = (

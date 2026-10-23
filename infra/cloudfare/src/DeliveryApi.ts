@@ -2,9 +2,10 @@
  * How AgentSession reports on the deliveries handed to it: through the delivery API that `bot.deliveryApi`
  * serves on the Ingress Worker, with the client generated from the same `HttpApi`, as any remote worker does.
  */
-import { makeDeliveryClient, type DeliveryClient } from '@humanlayer/channels-delivery'
+import { makeDeliveryClient } from '@humanlayer/channels-delivery'
+import { DeliveryApi } from '@slop/core'
 import * as Cloudflare from 'alchemy/Cloudflare'
-import { Context, Effect, Layer } from 'effect'
+import { Effect, Layer } from 'effect'
 import { HttpClient } from 'effect/http'
 
 /** The Ingress Worker's service binding to itself, declared on its `env`. */
@@ -29,12 +30,10 @@ const selfBindingHttpClient = Layer.effect(
 	}),
 )
 
-export class DeliveryApi extends Context.Service<DeliveryApi, DeliveryClient>()('alchemy-cloudflare/DeliveryApi', {
-	/** The client over whichever `HttpClient` its environment supplies. */
-	make: makeDeliveryClient({ baseUrl: BINDING_BASE_URL }),
-}) {
-	static readonly layer = Layer.effect(this, this.make)
+/** The core `DeliveryApi` port, re-exported for the Cloudflare code that reports through it. */
+export { DeliveryApi }
 
-	/** The client over the Ingress Worker's self service binding. */
-	static readonly layerSelfBinding = DeliveryApi.layer.pipe(Layer.provide(selfBindingHttpClient))
-}
+/** Fills the core `DeliveryApi` port with the client over the Ingress Worker's self service binding. */
+export const DeliveryApiCloudflare = Layer.effect(DeliveryApi, makeDeliveryClient({ baseUrl: BINDING_BASE_URL })).pipe(
+	Layer.provide(selfBindingHttpClient),
+)

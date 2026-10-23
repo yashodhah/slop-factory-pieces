@@ -22,11 +22,9 @@ import {
 	GitHubReactionTarget,
 	type GitHubReactionRequest,
 } from '@humanlayer/channels-github'
-import { RuntimeContext } from 'alchemy/RuntimeContext'
 import { ConfigProvider, Effect, Layer, Ref } from 'effect'
 
-import type { AgentSessionMessage } from '@slop/core'
-import { AgentSessions } from '../src/AgentSessionDO'
+import { type AgentSessionMessage, AgentSessions } from '@slop/core'
 import { githubHandlers, maintainerOnlyNotice, mentionPrompt } from '../src/GithubBot'
 import { makeFakeDeliveryContext } from './support/delivery-context'
 
@@ -142,9 +140,7 @@ const runOnMentioned = (
 					Ref.update(recorded, (current) => ({ ...current, subscribed: [...current.subscribed, mailboxKey] })).pipe(
 						Effect.as(MailboxSubscriptionCreatedResult.make({})),
 					),
-			}),
-			Layer.mock(RuntimeContext, { Type: 'Worker', id: 'github-bot-test', env: {} }),
-		)
+			}),		)
 		for (const fixture of fixtures) {
 			yield* githubHandlers.onMentioned(fixture.event, delivery.context).pipe(Effect.provide(layer))
 		}

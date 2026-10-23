@@ -24,11 +24,9 @@ import {
 	type GitHubMentioned,
 	type GitHubRepositoryRef,
 } from '@humanlayer/channels-github'
-import type { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Config, Effect, Match, Predicate, Schema } from 'effect'
 
-import { AgentSessions } from './AgentSessionDO'
-import { AgentSessionMessage } from '@slop/core'
+import { AgentSessionMessage, AgentSessions } from '@slop/core'
 import { jira } from './JiraBot'
 
 export const maintainerOnlyNotice =
@@ -118,7 +116,7 @@ const githubRepositoryLogAnnotations = (ref: GitHubRepositoryRef) => ({
 const HANDOFF_FAIL_AFTER = '10 minutes'
 
 type HandlerError = GitHubApiError | Config.ConfigError | MailboxSubscriptionError | DeliveryHandoffError
-type HandlerRequirements = GitHubApi | RuntimeContext | AgentSessions | MailboxSubscriptions
+type HandlerRequirements = GitHubApi | AgentSessions | MailboxSubscriptions
 
 /**
  * GitHub App callbacks. An authorized mention hands the delivery to the discussion's AgentSession, which finishes

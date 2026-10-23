@@ -1,11 +1,9 @@
 import { describe, it } from '@effect/vitest'
 import { JiraApi, JiraApiError, JiraIssueId, JiraIssueRef, JiraMentioned } from '@humanlayer/channels-jira'
-import { RuntimeContext } from 'alchemy/RuntimeContext'
 import { Effect, Fiber, Layer, Redacted, Ref } from 'effect'
 import { TestClock } from 'effect/testing'
 
-import type { AgentSessionMessage } from '@slop/core'
-import { AgentSessions } from '../src/AgentSessionDO'
+import { type AgentSessionMessage, AgentSessions } from '@slop/core'
 import { jiraHandlers, makeJiraHandlers } from '../src/JiraBot'
 import { makeFakeDeliveryContext } from './support/delivery-context'
 
@@ -84,9 +82,7 @@ const runOnMentioned = (
 							})),
 					}),
 				}),
-			),
-			Layer.mock(RuntimeContext, { Type: 'Worker', id: 'jira-bot-test', env: {} }),
-		)
+			),		)
 		const handlers = options.handlers ?? jiraHandlers
 		yield* handlers.onMentioned(event, delivery.context).pipe(Effect.provide(layer))
 		return {
