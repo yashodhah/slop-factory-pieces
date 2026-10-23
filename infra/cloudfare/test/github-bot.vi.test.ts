@@ -24,8 +24,8 @@ import {
 } from '@humanlayer/channels-github'
 import { ConfigProvider, Effect, Layer, Ref } from 'effect'
 
-import { type AgentSessionMessage, AgentSessions } from '@slop/core'
-import { githubHandlers, maintainerOnlyNotice, mentionPrompt } from '../src/GithubBot'
+import { type AgentSessionMessage, AgentSessions, maintainerOnlyNotice, mentionPrompt } from '@slop/core'
+import { githubHandlers } from '../src/GithubBot'
 import { makeFakeDeliveryContext } from './support/delivery-context'
 
 const repository = {
